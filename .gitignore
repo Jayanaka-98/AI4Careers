@@ -5,6 +5,7 @@ __pycache__/
 # Jaseci/Jac runtime
 .jaseci/
 .jac_tmp/
+.jac/
 *.log
 
 # Env
@@ -12,5 +13,20 @@ __pycache__/
 venv/
 .venv/
 
+# Node
+node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/.env.local
+
 # OS
 .DS_Store
+
+# Backup files
+*.bak
+*.old
+
+# SQLite databases (contains user data)
+*.db
+*.sqlite
+*.sqlite3

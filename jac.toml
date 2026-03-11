@@ -1,0 +1,11 @@
+[project]
+name = "AI4Careers"
+version = "0.1.0"
+description = "AI-powered career fair assistant"
+entry-point = "main.jac"
+
+[dependencies]
+
+[serve]
+
+[plugins.client]
