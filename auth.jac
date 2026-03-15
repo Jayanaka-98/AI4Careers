@@ -7,7 +7,7 @@ walker:pub Signup {
     has password: str;
     has name: str;
 
-    can signup with `root entry {
+    can signup with Root entry {
         # Check if user already exists
         existing = get_user_by_email(self.email);
         if existing is not None {
@@ -27,7 +27,7 @@ walker:pub Login {
     has email: str;
     has password: str;
 
-    can login with `root entry {
+    can login with Root entry {
         # Get user from database
         user = get_user_by_email(self.email);
 

@@ -5,7 +5,7 @@ import from security { token_to_user_id }
 walker:pub Me {
     has token: str;
 
-    can get_me with `root entry {
+    can get_me with Root entry {
         uid = token_to_user_id(self.token);
         if uid == "" {
             report {"error": "unauthorized"};
@@ -41,7 +41,7 @@ walker:pub UpdatePreferences {
     has work_modes: list;
     has role_types: list;
 
-    can update_prefs with `root entry {
+    can update_prefs with Root entry {
         uid = token_to_user_id(self.token);
         if uid == "" {
             report {"error": "unauthorized"};

@@ -16,7 +16,7 @@ walker:pub ListCompanies {
     has region: str = "";
     has major_search: str = "";
 
-    can list_companies with `root entry {
+    can list_companies with Root entry {
         filters = {
             "fair_day": self.fair_day,
             "position_type": self.position_type,
@@ -34,7 +34,7 @@ walker:pub GetCompany {
     has event_id: str;
     has company_id: str;
 
-    can fetch with `root entry {
+    can fetch with Root entry {
         company = get_company(self.event_id, self.company_id);
 
         if company is None {
@@ -51,7 +51,7 @@ walker:pub ListRoles {
     has location: str = "";
     has work_mode: str = "";
 
-    can list_roles with `root entry {
+    can list_roles with Root entry {
         roles = get_roles(self.event_id);
         report roles;
     }
