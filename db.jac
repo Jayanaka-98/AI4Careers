@@ -31,7 +31,7 @@ def init_db -> None {
         name TEXT NOT NULL,
         created_at TEXT NOT NULL,
         needs_sponsorship INTEGER DEFAULT 0,
-        work_authorization TEXT DEFAULT '',
+        work_authorization TEXT DEFAULT '[]',
         preferred_locations TEXT DEFAULT '[]',
         work_modes TEXT DEFAULT '[]',
         role_types TEXT DEFAULT '[]'
@@ -46,6 +46,7 @@ def init_db -> None {
         filename TEXT NOT NULL,
         uploaded_at TEXT NOT NULL,
         raw_text TEXT DEFAULT '',
+        pdf_data TEXT DEFAULT '',
         skills TEXT DEFAULT '[]',
         experience_bullets TEXT DEFAULT '[]',
         projects TEXT DEFAULT '[]',
@@ -56,16 +57,13 @@ def init_db -> None {
 
     # Backward-compatible migration for older databases
     existing_columns = c.execute("PRAGMA table_info(resumes)").fetchall();
-    has_raw_text = False;
+    existing_col_names = [col["name"] for col in existing_columns];
 
-    for col in existing_columns {
-        if col["name"] == "raw_text" {
-            has_raw_text = True;
-        }
-    }
-
-    if not has_raw_text {
+    if "raw_text" not in existing_col_names {
         c.execute("ALTER TABLE resumes ADD COLUMN raw_text TEXT DEFAULT ''");
+    }
+    if "pdf_data" not in existing_col_names {
+        c.execute("ALTER TABLE resumes ADD COLUMN pdf_data TEXT DEFAULT ''");
     }
 
     # Events table
@@ -191,7 +189,7 @@ def get_user_by_email(email: str) -> dict | None {
         "name": row["name"],
         "created_at": row["created_at"],
         "needs_sponsorship": bool(row["needs_sponsorship"]),
-        "work_authorization": row["work_authorization"],
+        "work_authorization": json.loads(row["work_authorization"]) if row["work_authorization"].startswith('[') else [row["work_authorization"]] if row["work_authorization"] else [],
         "preferred_locations": json.loads(row["preferred_locations"]),
         "work_modes": json.loads(row["work_modes"]),
         "role_types": json.loads(row["role_types"])
@@ -216,7 +214,7 @@ def get_user_by_id(user_id: str) -> dict | None {
         "name": row["name"],
         "created_at": row["created_at"],
         "needs_sponsorship": bool(row["needs_sponsorship"]),
-        "work_authorization": row["work_authorization"],
+        "work_authorization": json.loads(row["work_authorization"]) if row["work_authorization"].startswith('[') else [row["work_authorization"]] if row["work_authorization"] else [],
         "preferred_locations": json.loads(row["preferred_locations"]),
         "work_modes": json.loads(row["work_modes"]),
         "role_types": json.loads(row["role_types"])
@@ -227,7 +225,7 @@ def get_user_by_id(user_id: str) -> dict | None {
 def update_user_preferences(
     user_id: str,
     needs_sponsorship: bool,
-    work_authorization: str,
+    work_authorization: list,
     preferred_locations: list,
     work_modes: list,
     role_types: list
@@ -244,7 +242,7 @@ def update_user_preferences(
            WHERE user_id = ?""",
         (
             int(needs_sponsorship),
-            work_authorization,
+            json.dumps(work_authorization),
             json.dumps(preferred_locations),
             json.dumps(work_modes),
             json.dumps(role_types),
@@ -262,6 +260,7 @@ def create_resume(
     user_id: str,
     filename: str,
     raw_text: str,
+    pdf_data: str,
     skills: list,
     experience_bullets: list,
     projects: list,
@@ -274,14 +273,15 @@ def create_resume(
 
     conn.execute(
         """INSERT INTO resumes
-           (resume_id, user_id, filename, uploaded_at, raw_text, skills, experience_bullets, projects, education)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           (resume_id, user_id, filename, uploaded_at, raw_text, pdf_data, skills, experience_bullets, projects, education)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             resume_id,
             user_id,
             filename,
             uploaded_at,
             raw_text,
+            pdf_data,
             json.dumps(skills),
             json.dumps(experience_bullets),
             json.dumps(projects),
@@ -312,6 +312,7 @@ def get_resume(resume_id: str, user_id: str) -> dict | None {
         "filename": row["filename"],
         "uploaded_at": row["uploaded_at"],
         "raw_text": row["raw_text"],
+        "pdf_data": row["pdf_data"],
         "skills": json.loads(row["skills"]),
         "experience_bullets": json.loads(row["experience_bullets"]),
         "projects": json.loads(row["projects"]),
@@ -339,11 +340,46 @@ def get_latest_resume(user_id: str) -> dict | None {
         "filename": row["filename"],
         "uploaded_at": row["uploaded_at"],
         "raw_text": row["raw_text"],
+        "pdf_data": row["pdf_data"],
         "skills": json.loads(row["skills"]),
         "experience_bullets": json.loads(row["experience_bullets"]),
         "projects": json.loads(row["projects"]),
         "education": json.loads(row["education"])
     };
+}
+
+"""List all resumes for user (metadata only, no pdf_data)."""
+def list_resumes(user_id: str) -> list {
+    conn = _conn();
+    rows = conn.execute(
+        """SELECT resume_id, filename, uploaded_at, skills FROM resumes
+           WHERE user_id = ? ORDER BY uploaded_at DESC""",
+        (user_id, )
+    ).fetchall();
+    conn.close();
+
+    import json;
+    return [
+        {
+            "resume_id": row["resume_id"],
+            "filename": row["filename"],
+            "uploaded_at": row["uploaded_at"],
+            "skills_count": len(json.loads(row["skills"]))
+        }
+        for row in rows
+    ];
+}
+
+"""Delete a resume."""
+def delete_resume(resume_id: str, user_id: str) -> bool {
+    conn = _conn();
+    result = conn.execute(
+        "DELETE FROM resumes WHERE resume_id = ? AND user_id = ?",
+        (resume_id, user_id)
+    );
+    conn.commit();
+    conn.close();
+    return result.rowcount > 0;
 }
 
 # ========== Event/Company/Role Operations ==========

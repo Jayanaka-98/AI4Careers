@@ -76,8 +76,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = useCallback(() => fetchUser(), [fetchUser]);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, signup, logout, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

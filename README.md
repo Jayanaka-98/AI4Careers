@@ -4,249 +4,213 @@ AI-powered career fair assistant for University of Michigan students. Helps stud
 
 ## Tech Stack
 
-- **Backend**: Jac (Jaseci language) 0.9.15
-- **Frontend**: React 18
-- **Database**: SQLite
+- **Backend**: Jac (Jaseci language) `0.12.2`
+- **Frontend**: React `19.2.4`, React Router `7.13.1`
+- **Database**: SQLite (via Jac's built-in persistence at `.jac/data/`)
+- **AI**: OpenAI or Anthropic via byllm `0.5.7` / LiteLLM
+- **PDF parsing**: pdfjs-dist `5.5.207` (browser-side)
+- **HTTP client**: axios `1.13.6`
 - **API**: REST endpoints via Jac walkers
 
 ## Current Features
 
-### Authentication System
-- User signup with email/password
-- Secure login with token-based authentication
-- Password hashing with bcrypt
-- Session management
-
-### User Profile Management
-- View user profile with preferences
-- Update work preferences (sponsorship, locations, work modes)
-- Store role type preferences
-
-### Resume Upload (Backend Ready)
-- Parse resume text
-- Extract skills, experience, projects, education
-- Store resume data per user
-- *(Frontend UI coming soon)*
-
-### Career Fair Data (Backend Ready)
-- List career fair events
-- Browse companies with filters
-- View company details
-- Filter by major, position type, sponsors, region
-- *(Frontend UI coming soon)*
+- User signup / login with token-based auth
+- Resume upload (PDF → text extraction + PDF stored), preview, download, delete
+- Career preferences (sponsorship, work auth, locations, work modes, role types)
+- AI chatbot grounded in resume + career fair data
+- Career fair company browser (UMich Fall 2025, 230 companies)
 
 ## Setup Instructions
 
 ### Prerequisites
-- Python 3.10+
-- Node.js 16+
-- Jac CLI (`pip install jaclang`)
 
-### Backend Setup
+| Tool | Version used | Notes |
+|------|-------------|-------|
+| Python | **3.12.8** | Must be 3.12.x — tested with pyenv `3.12.8` |
+| Node.js | **23.7.0** | 16+ should work |
+| npm | **10.9.2** | comes with Node |
+| jaclang | **0.12.2** | installed in venv, 0.12.x should theoretically all work|
+| byllm | **0.5.7** | installed in venv |
 
-1. **Install Jac**:
-   ```bash
-   pip install jaclang
-   ```
+> **jaclang version is critical.** The walkers were written for `0.12.2`. Other versions may break auth (`walker:pub` visibility) or the `by llm()` syntax.
 
-2. **Initialize database**:
-   ```bash
-   jac run main.jac
-   ```
+### 1. Create a virtual environment
 
-3. **Start backend server**:
-   ```bash
-   jac start main.jac
-   ```
-   Backend runs at `http://localhost:8000`
-
-### Frontend Setup
-
-1. **Install dependencies**:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Start development server**:
-   ```bash
-   npm start
-   ```
-   Frontend runs at `http://localhost:3000`
-
-## How to Use
-
-### 1. Sign Up
-1. Navigate to `http://localhost:3000`
-2. Click "Sign Up"
-3. Enter your email, password, and name
-4. Click "Sign Up" to create account
-
-### 2. Log In
-1. Go to login page
-2. Enter your email and password
-3. You'll be redirected to the dashboard
-
-### 3. View Profile
-- After login, you'll see your dashboard
-- Your profile information is displayed
-- Current preferences are shown 
-
-### 4. Update Preferences *(API ready, UI coming soon)*
-Use the API directly:
 ```bash
-curl -X POST http://localhost:8000/walker/UpdatePreferences \
-  -H "Content-Type: application/json" \
-  -d '{
-    "token": "your_token_here",
-    "needs_sponsorship": false,
-    "work_authorization": "US Citizen",
-    "preferred_locations": ["Ann Arbor", "San Francisco"],
-    "work_modes": ["Remote", "Hybrid"],
-    "role_types": ["Software Engineer", "Data Scientist"]
-  }'
+cd AI4Careers
+python3 -m venv .venv        # use Python 3.12.x
+source .venv/bin/activate
 ```
 
-## API Endpoints
+### 2. Install Jac and dependencies
 
-All endpoints are POST requests to `http://localhost:8000/walker/<WalkerName>`
+Pin the exact versions to match the codebase:
 
-### Authentication
-- **POST /walker/Signup**
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password123",
-    "name": "John Doe"
-  }
-  ```
+```bash
+.venv/bin/pip install "jaclang==0.12.2" "byllm==0.5.7"
+```
 
-- **POST /walker/Login**
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password123"
-  }
-  ```
-  Returns: `{ "token": "token:user_id" }`
+Verify:
+```bash
+.venv/bin/jac --version   # should print 0.12.2
+.venv/bin/pip show byllm  # should show Version: 0.5.7
+```
 
-### Profile
-- **POST /walker/Me**
-  ```json
-  {
-    "token": "your_token"
-  }
-  ```
-  Returns user profile with preferences
+### 3. Configure your LLM
 
-- **POST /walker/UpdatePreferences**
-  ```json
-  {
-    "token": "your_token",
-    "needs_sponsorship": false,
-    "work_authorization": "US Citizen",
-    "preferred_locations": ["City1", "City2"],
-    "work_modes": ["Remote", "Hybrid"],
-    "role_types": ["SWE", "PM"]
-  }
-  ```
+`jac.toml` is **gitignored** — each developer keeps their own. Copy the example and edit it:
 
-### Resume (Backend Ready)
-- **POST /walker/ResumeUpload**
-  ```json
-  {
-    "token": "your_token",
-    "filename": "resume.pdf",
-    "raw_text": "Resume text content..."
-  }
-  ```
+```bash
+cd AI4Careers
+cp jac.toml.example jac.toml
+```
 
-- **POST /walker/GetResume**
-  ```json
-  {
-    "token": "your_token",
-    "resume_id": "resume_id"
-  }
-  ```
+Then open `jac.toml` and set your model:
 
-### Career Fair (Backend Ready)
-- **POST /walker/ListEvents**
-  ```json
-  {}
-  ```
+**Using OpenAI** (set `OPENAI_API_KEY` in your environment):
+```toml
+[plugins.byllm.model]
+default_model = "gpt-4o-mini"
+```
 
-- **POST /walker/ListCompanies**
-  ```json
-  {
-    "event_id": "event_id",
-    "fair_day": "",
-    "position_type": "",
-    "sponsors": "",
-    "region": "",
-    "major_search": ""
-  }
-  ```
+**Using Anthropic** (set `ANTHROPIC_API_KEY` in your environment):
+```toml
+[plugins.byllm.model]
+default_model = "claude-haiku-4-5-20251001"
+```
 
-- **POST /walker/GetCompany**
-  ```json
-  {
-    "event_id": "event_id",
-    "company_id": "company_id"
-  }
-  ```
+Set your API key (add to `~/.zshrc` to make it permanent):
+```bash
+export OPENAI_API_KEY=sk-...        # if using OpenAI
+export ANTHROPIC_API_KEY=sk-ant-... # if using Anthropic
+```
+
+Each developer uses their own key and model — they do not affect each other.
+
+### 4. Load career fair data
+
+Run once to import the UMich Fall 2025 companies into the database:
+
+```bash
+cd AI4Careers
+source ../.venv/bin/activate
+jac run import_career_fair.jac
+```
+
+### 5. Start the backend
+
+```bash
+cd AI4Careers
+source ../.venv/bin/activate
+jac start main.jac --port 8000
+```
+
+Backend runs at `http://localhost:8000`
+
+### 6. Start the frontend
+
+```bash
+cd AI4Careers/frontend
+npm install
+npm start
+```
+
+Frontend runs at `http://localhost:3000`
+
+---
 
 ## Project Structure
 
 ```
 AI4Careers/
-├── main.jac              # Main entry point, imports all walkers
-├── auth.jac              # Signup, Login walkers
-├── profile.jac           # Me, UpdatePreferences walkers
-├── resume.jac            # ResumeUpload, GetResume walkers
-├── career_fair.jac       # ListEvents, ListCompanies, GetCompany walkers
-├── db.jac                # Database operations
-├── security.jac          # Password hashing, token management
-├── parsing.jac           # Resume parsing utilities
-├── data/                 # CSV data for career fairs
-├── frontend/
-│   ├── src/
-│   │   ├── components/   # React components
-│   │   ├── pages/        # Login, Signup, Dashboard pages
-│   │   ├── context/      # AuthContext for state management
-│   │   └── services/     # API client
-│   └── package.json
-└── .jac/                 # Jac runtime (contains SQLite database)
-    └── data/
-        └── ai4careers.db # User data, resumes, preferences
+├── main.jac                  # Entry point, imports all walkers
+├── auth.jac                  # Signup, Login, Me, UpdatePreferences walkers
+├── resume.jac                # ResumeUpload, GetResume, ListResumes, DeleteResume walkers
+├── career_fair.jac           # ListEvents, ListCompanies, GetCompany, ListRoles walkers
+├── ai_chat.jac               # ChatWithAI walker
+├── db.jac                    # All database operations
+├── security.jac              # Password hashing, token management
+├── parsing.jac               # Resume parsing — AI skill extraction via byllm
+├── import_career_fair.jac    # One-time CSV → DB importer
+├── jac.toml                  # Your local config (gitignored)
+├── jac.toml.example          # Shared template — copy this to jac.toml
+├── data/
+│   └── umich_fall_2025_career_fair_jac_ready.csv
+└── frontend/
+    └── src/
+        ├── pages/            # Login, Signup, Dashboard, Profile, ResumeUpload, ChatWithAI, Companies
+        ├── context/          # AuthContext
+        └── services/         # api.js
 ```
+
+---
+
+## API Endpoints
+
+All endpoints are `POST /walker/<WalkerName>` at `http://localhost:8000`.
+
+### Auth
+| Walker | Fields |
+|--------|--------|
+| `Signup` | `email`, `password`, `name` |
+| `Login` | `email`, `password` → returns `{ token }` |
+| `Me` | `token` → returns user profile + resume_count + preferences |
+| `UpdatePreferences` | `token`, `needs_sponsorship`, `work_authorization[]`, `preferred_locations[]`, `work_modes[]`, `role_types[]` |
+
+### Resume
+| Walker | Fields |
+|--------|--------|
+| `ResumeUpload` | `token`, `filename`, `raw_text`, `pdf_data` (base64) |
+| `GetResume` | `token`, `resume_id` → returns resume + pdf_data |
+| `ListResumes` | `token` → returns list of resume metadata |
+| `DeleteResume` | `token`, `resume_id` |
+
+### Career Fair
+| Walker | Fields |
+|--------|--------|
+| `ListEvents` | _(none)_ |
+| `ListCompanies` | `event_id`, `fair_day`, `position_type`, `sponsors`, `region`, `major_search` |
+| `GetCompany` | `event_id`, `company_id` |
+| `ListRoles` | `event_id` |
+
+### AI Chat
+| Walker | Fields |
+|--------|--------|
+| `ChatWithAI` | `token`, `question`, `history[]`, `event_id` |
+
+---
 
 ## Troubleshooting
 
-### Backend won't start
-- Make sure Jac is installed: `jac --version`
-- Kill existing processes on port 8000: `lsof -ti:8000 | xargs kill -9`
+**Backend won't start**
+- Check Jac version: `.venv/bin/jac --version` (must be **0.12.2** exactly)
+- Kill port: `lsof -ti:8000 | xargs kill -9`
+- Make sure `jac.toml` exists (copy from `jac.toml.example`)
 
-### Frontend won't connect
-- Verify backend is running at `http://localhost:8000`
-- Check that `REACT_APP_API_URL` environment variable is set (or defaults to localhost:8000)
+**AI chat returns random string (e.g. "OhbVrpoiVgRV")**
+- `byllm` is not installed in your venv: `.venv/bin/pip install byllm`
 
-### Login not working
+**AI chat returns AuthenticationError**
+- Your API key is missing or wrong. Check `echo $OPENAI_API_KEY` or `echo $ANTHROPIC_API_KEY`
+- Restart the backend after setting the key
+
+**Login not working**
 - Clear browser localStorage and try again
-- Check browser console for errors
-- Verify user exists in database: `sqlite3 .jac/data/ai4careers.db "SELECT * FROM users;"`
+- Verify user exists: `sqlite3 .jac/data/AI4Careers.db "SELECT email FROM users;"`
+
+**Resume upload fails**
+- Make sure the backend is running and the PDF worker version matches: the `public/pdf.worker.min.mjs` should match the installed `pdfjs-dist` version
+
+---
 
 ## Coming Soon
 
-- [ ] Companies browse page with filters
-- [ ] Resume upload UI
-- [ ] AI-powered fit scoring
+- [ ] Company browser filters (sponsorship, region, position type, fair day)
+- [ ] AI-powered fit scoring (resume vs. company roles)
 - [ ] Personalized pitch generation
-- [ ] Company recommendations based on skills
-- [ ] Enhanced security with JWT tokens
-
-## Data
-
-Career fair data sourced from University of Michigan Fall 2025 Career Fair (public data).
+- [ ] Company recommendations ranked by resume fit
+- [ ] Select which resume the AI uses
+- [ ] Production-grade auth (bcrypt passwords, JWT tokens with expiry)
 
 ## License
 

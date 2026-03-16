@@ -63,7 +63,11 @@ export const updatePreferences = async (token, preferences) => {
     token,
     ...preferences,
   });
-  return response.data;
+  const jacResponse = response.data;
+  if (jacResponse.ok && jacResponse.data.reports && jacResponse.data.reports.length > 0) {
+    return jacResponse.data.reports[0];
+  }
+  return { error: 'Failed to update preferences' };
 };
 
 // Career Fair endpoints
@@ -74,7 +78,11 @@ export const listEvents = async () => {
 
 export const listCompanies = async (filters) => {
   const response = await api.post('/walker/ListCompanies', filters);
-  return response.data;
+  const jacResponse = response.data;
+  if (jacResponse.ok && jacResponse.data.reports && jacResponse.data.reports.length > 0) {
+    return jacResponse.data.reports[0];
+  }
+  return [];
 };
 
 export const getCompany = async (event_id, company_id) => {
@@ -85,11 +93,12 @@ export const getCompany = async (event_id, company_id) => {
   return response.data;
 };
 
-export const uploadResume = async (token, filename, raw_text) => {
+export const uploadResume = async (token, filename, raw_text, pdf_data = '') => {
   const response = await api.post('/walker/ResumeUpload', {
     token,
     filename,
     raw_text,
+    pdf_data,
   });
 
   const jacResponse = response.data;
@@ -98,6 +107,33 @@ export const uploadResume = async (token, filename, raw_text) => {
   }
 
   return { error: 'Resume upload failed' };
+};
+
+export const getResume = async (token, resume_id) => {
+  const response = await api.post('/walker/GetResume', { token, resume_id });
+  const jacResponse = response.data;
+  if (jacResponse.ok && jacResponse.data.reports && jacResponse.data.reports.length > 0) {
+    return jacResponse.data.reports[0];
+  }
+  return { error: 'Resume not found' };
+};
+
+export const listResumes = async (token) => {
+  const response = await api.post('/walker/ListResumes', { token });
+  const jacResponse = response.data;
+  if (jacResponse.ok && jacResponse.data.reports && jacResponse.data.reports.length > 0) {
+    return jacResponse.data.reports[0];
+  }
+  return { resumes: [] };
+};
+
+export const deleteResume = async (token, resume_id) => {
+  const response = await api.post('/walker/DeleteResume', { token, resume_id });
+  const jacResponse = response.data;
+  if (jacResponse.ok && jacResponse.data.reports && jacResponse.data.reports.length > 0) {
+    return jacResponse.data.reports[0];
+  }
+  return { error: 'Delete failed' };
 };
 
 export const chatWithAI = async (token, question, history, event_id = 'evt_umich_fall_2025') => {

@@ -4,11 +4,12 @@ import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import { uploadResume } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+
 GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.mjs`;
 
 function ResumeUpload() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, refreshUser } = useAuth();
 
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
@@ -55,6 +56,15 @@ function ResumeUpload() {
     setFile(selectedFile);
   };
 
+  const fileToBase64 = (pdfFile) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfFile);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -68,20 +78,24 @@ function ResumeUpload() {
     setStatus('Reading PDF...');
 
     try {
-      const rawText = await extractPdfText(file);
+      const [rawText, pdfData] = await Promise.all([
+        extractPdfText(file),
+        fileToBase64(file),
+      ]);
 
       if (!rawText) {
         throw new Error('Could not extract text from this PDF.');
       }
 
       setStatus('Uploading resume...');
-      const result = await uploadResume(token, file.name, rawText);
+      const result = await uploadResume(token, file.name, rawText, pdfData);
 
       if (result.error) {
         throw new Error(result.error);
       }
 
       setStatus('Resume uploaded successfully.');
+      await refreshUser();
     } catch (err) {
       setError(err.message || 'Upload failed.');
       setStatus('');

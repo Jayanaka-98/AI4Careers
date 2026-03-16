@@ -7,6 +7,8 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ResumeUpload from './pages/ResumeUpload';
 import ChatWithAI from './pages/ChatWithAI';
+import Profile from './pages/Profile';
+import Companies from './pages/Companies';
 import './App.css';
 
 function App() {
@@ -37,6 +39,22 @@ function App() {
             element={
               <PrivateRoute>
                 <ChatWithAI />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/companies"
+            element={
+              <PrivateRoute>
+                <Companies />
               </PrivateRoute>
             }
           />
