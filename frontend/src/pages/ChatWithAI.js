@@ -11,7 +11,7 @@ function ChatWithAI() {
         {
             role: 'assistant',
             content:
-                'Hi! I can use your uploaded resume and the career fair database to help with company matching, resume fit, and strategy. Try asking: "我的简历在这次career fair中最适合哪家公司？"',
+                'Hi! I can use your uploaded resume and the career fair database to help with company matching, resume fit, and strategy. Try asking: "Which companies at this career fair are the best fit for my resume?"',
         },
     ]);
     const [input, setInput] = useState('');
