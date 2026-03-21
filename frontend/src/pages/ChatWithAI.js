@@ -11,7 +11,7 @@ function ChatWithAI() {
         {
             role: 'assistant',
             content:
-                'Hi! I can use your uploaded resume and the career fair database to help with company matching, resume fit, and strategy. Try asking: "Which companies at this career fair are the best fit for my resume?"',
+                'Hi! You can use commands:\n/match -> match your resume with career fair companies\n/optimize -> optimize and polish your resume text\n/pitch -> generate a tailored elevator pitch\n\nYou can also add context, e.g. /pitch backend internship.',
         },
     ]);
     const [input, setInput] = useState('');
@@ -101,7 +101,7 @@ function ChatWithAI() {
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Ask about your resume, best-fit companies, or how to prepare for the fair..."
+                        placeholder="Try /match, /optimize, /pitch, or ask a normal question..."
                         rows={3}
                     />
                     <button type="submit" className="btn-primary" disabled={loading}>
