@@ -43,7 +43,7 @@ def _split_multi(value) -> list[str] {
     } elif ";" in text {
         parts = text.split(";");
     } else {
-        parts = text.split(",");
+        parts = [text];
     }
 
     cleaned: list[str] = [];
@@ -55,6 +55,7 @@ def _split_multi(value) -> list[str] {
     }
     return cleaned;
 }
+
 
 def _to_bool(value) -> bool {
     text = _safe_str(value).lower();

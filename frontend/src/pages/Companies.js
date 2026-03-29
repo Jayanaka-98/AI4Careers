@@ -8,12 +8,32 @@ import { listCompanies, getCompany, saveCompany, unsaveCompany, listSavedCompani
 const EVENT_ID = 'evt_umich_fall_2025';
 
 function sponsorSummary(sponsorship) {
-  if (!sponsorship || sponsorship.length === 0) return { label: 'Unknown', color: '#a0aec0' };
-  const text = sponsorship.join(' ').toLowerCase();
-  if (text.includes('will not require')) return { label: 'No Sponsorship', color: '#e53e3e' };
-  if (text.includes('immediate') || text.includes('opt') || text.includes('cpt')) return { label: 'Sponsors Visas', color: '#38a169' };
+  if (!Array.isArray(sponsorship) || sponsorship.length === 0) {
+    return { label: 'Check Details', color: '#dd6b20' };
+  }
+
+  const normalized = sponsorship.map((item) => item.trim().toLowerCase());
+
+  const hasNoSponsorship = normalized.includes(
+    'authorized to work in the united states and will not require future sponsorship'
+  );
+
+  const hasFutureVisa = normalized.some((item) =>
+    item.startsWith('work visa that will require future sponsorship')
+  );
+
+  if (hasNoSponsorship && hasFutureVisa) {
+    return { label: 'Sponsors Visas', color: '#38a169' };
+  }
+
+  if (hasNoSponsorship && !hasFutureVisa && normalized.length === 1) {
+    return { label: 'No Sponsorship', color: '#e53e3e' };
+  }
+
   return { label: 'Check Details', color: '#dd6b20' };
 }
+
+
 
 function FilterChip({ label, active, onClick }) {
   return (
@@ -139,99 +159,99 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
         {/* Scrollable body */}
         <div style={{ overflowY: 'auto', padding: '20px 24px 28px', flex: 1 }}>
 
-        <span style={{
-          display: 'inline-block', fontSize: '0.78rem', fontWeight: 600, padding: '3px 10px',
-          borderRadius: '999px', background: sponsor.color + '18', color: sponsor.color,
-          border: `1px solid ${sponsor.color}44`, marginBottom: '16px',
-        }}>{sponsor.label}</span>
+          <span style={{
+            display: 'inline-block', fontSize: '0.78rem', fontWeight: 600, padding: '3px 10px',
+            borderRadius: '999px', background: sponsor.color + '18', color: sponsor.color,
+            border: `1px solid ${sponsor.color}44`, marginBottom: '16px',
+          }}>{sponsor.label}</span>
 
-        {/* Position / Day pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-          {company.positions?.map(p => (
-            <span key={p} style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#ebf8ff', color: '#2b6cb0', border: '1px solid #bee3f8' }}>{p}</span>
-          ))}
-          <span style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#f0fff4', color: '#276749', border: '1px solid #c6f6d5' }}>{company.is_multi_day ? 'Mon & Tue' : company.fair_day}</span>
-        </div>
-
-        <p style={{ color: '#4a5568', lineHeight: 1.6, marginBottom: '16px' }}>{company.description}</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', marginBottom: '20px' }}>
-          {company.regions?.length > 0 && (
-            <div><strong>Regions</strong><p style={{ margin: '4px 0', color: '#718096' }}>{company.regions.join(', ')}</p></div>
-          )}
-          {company.degree_levels?.length > 0 && (
-            <div><strong>Degree Levels</strong><p style={{ margin: '4px 0', color: '#718096' }}>{company.degree_levels.join(', ')}</p></div>
-          )}
-          {company.sponsorship?.length > 0 && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <strong>Sponsorship Details</strong>
-              <p style={{ margin: '4px 0', color: '#718096' }}>{company.sponsorship.join('; ')}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Links */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
-          {company.website && (
-            <a href={company.website} target="_blank" rel="noreferrer" className="btn-primary" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '8px', width: 'auto' }}>Website</a>
-          )}
-          {company.careers_url && (
-            <a href={company.careers_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '8px', width: 'auto' }}>Careers Page</a>
-          )}
-        </div>
-
-        {/* Elevator Pitch Section */}
-        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <strong style={{ fontSize: '0.95rem' }}>Elevator Pitch</strong>
-            <button
-              onClick={handleGeneratePitch}
-              disabled={pitchLoading}
-              className="btn-secondary"
-              style={{ padding: '6px 14px', fontSize: '0.82rem', width: 'auto' }}
-            >{pitchLoading ? 'Generating...' : pitchDraft ? 'Regenerate' : 'Generate Pitch'}</button>
+          {/* Position / Day pills */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+            {company.positions?.map(p => (
+              <span key={p} style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#ebf8ff', color: '#2b6cb0', border: '1px solid #bee3f8' }}>{p}</span>
+            ))}
+            <span style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#f0fff4', color: '#276749', border: '1px solid #c6f6d5' }}>{company.is_multi_day ? 'Mon & Tue' : company.fair_day}</span>
           </div>
 
-          {pitchError && <p style={{ color: '#e53e3e', fontSize: '0.85rem' }}>{pitchError}</p>}
+          <p style={{ color: '#4a5568', lineHeight: 1.6, marginBottom: '16px' }}>{company.description}</p>
 
-          {/* Saved pitch (if no active draft) */}
-          {!pitchDraft && activePitch && (
-            <div style={{ background: '#f0fff4', border: '1px solid #c6f6d5', borderRadius: '8px', padding: '14px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#276749', fontWeight: 600, marginBottom: '8px' }}>✓ Saved Pitch</p>
-              <div className="chat-markdown" style={{ fontSize: '0.85rem' }}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{activePitch}</ReactMarkdown>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', marginBottom: '20px' }}>
+            {company.regions?.length > 0 && (
+              <div><strong>Regions</strong><p style={{ margin: '4px 0', color: '#718096' }}>{company.regions.join(', ')}</p></div>
+            )}
+            {company.degree_levels?.length > 0 && (
+              <div><strong>Degree Levels</strong><p style={{ margin: '4px 0', color: '#718096' }}>{company.degree_levels.join(', ')}</p></div>
+            )}
+            {company.sponsorship?.length > 0 && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <strong>Sponsorship Details</strong>
+                <p style={{ margin: '4px 0', color: '#718096' }}>{company.sponsorship.join('; ')}</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Draft pitch */}
-          {pitchDraft && (
-            <div>
-              <div style={{ background: '#fffbeb', border: '1px solid #fbd38d', borderRadius: '8px', padding: '14px', marginBottom: '12px' }}>
-                <p style={{ fontSize: '0.75rem', color: '#b7791f', fontWeight: 600, marginBottom: '8px' }}>Draft — review before saving</p>
+          {/* Links */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+            {company.website && (
+              <a href={company.website} target="_blank" rel="noreferrer" className="btn-primary" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '8px', width: 'auto' }}>Website</a>
+            )}
+            {company.careers_url && (
+              <a href={company.careers_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '8px', width: 'auto' }}>Careers Page</a>
+            )}
+          </div>
+
+          {/* Elevator Pitch Section */}
+          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.95rem' }}>Elevator Pitch</strong>
+              <button
+                onClick={handleGeneratePitch}
+                disabled={pitchLoading}
+                className="btn-secondary"
+                style={{ padding: '6px 14px', fontSize: '0.82rem', width: 'auto' }}
+              >{pitchLoading ? 'Generating...' : pitchDraft ? 'Regenerate' : 'Generate Pitch'}</button>
+            </div>
+
+            {pitchError && <p style={{ color: '#e53e3e', fontSize: '0.85rem' }}>{pitchError}</p>}
+
+            {/* Saved pitch (if no active draft) */}
+            {!pitchDraft && activePitch && (
+              <div style={{ background: '#f0fff4', border: '1px solid #c6f6d5', borderRadius: '8px', padding: '14px' }}>
+                <p style={{ fontSize: '0.75rem', color: '#276749', fontWeight: 600, marginBottom: '8px' }}>✓ Saved Pitch</p>
                 <div className="chat-markdown" style={{ fontSize: '0.85rem' }}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{pitchDraft}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{activePitch}</ReactMarkdown>
                 </div>
               </div>
-              {!pitchConfirmed ? (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={handleConfirmPitch} className="btn-primary" style={{ width: 'auto', padding: '8px 18px' }}>
-                    ✓ Confirm & Save Pitch
-                  </button>
-                  <button onClick={handleGeneratePitch} className="btn-secondary" style={{ width: 'auto', padding: '8px 18px' }}>
-                    Regenerate
-                  </button>
-                </div>
-              ) : (
-                <p style={{ color: '#38a169', fontWeight: 600, fontSize: '0.88rem' }}>✓ Pitch saved to your saved companies!</p>
-              )}
-            </div>
-          )}
+            )}
 
-          {!pitchDraft && !activePitch && !pitchLoading && (
-            <p style={{ color: '#a0aec0', fontSize: '0.85rem' }}>Click "Generate Pitch" to create a personalized elevator pitch for this company based on your resume.</p>
-          )}
-        </div>
+            {/* Draft pitch */}
+            {pitchDraft && (
+              <div>
+                <div style={{ background: '#fffbeb', border: '1px solid #fbd38d', borderRadius: '8px', padding: '14px', marginBottom: '12px' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#b7791f', fontWeight: 600, marginBottom: '8px' }}>Draft — review before saving</p>
+                  <div className="chat-markdown" style={{ fontSize: '0.85rem' }}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{pitchDraft}</ReactMarkdown>
+                  </div>
+                </div>
+                {!pitchConfirmed ? (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleConfirmPitch} className="btn-primary" style={{ width: 'auto', padding: '8px 18px' }}>
+                      ✓ Confirm & Save Pitch
+                    </button>
+                    <button onClick={handleGeneratePitch} className="btn-secondary" style={{ width: 'auto', padding: '8px 18px' }}>
+                      Regenerate
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ color: '#38a169', fontWeight: 600, fontSize: '0.88rem' }}>✓ Pitch saved to your saved companies!</p>
+                )}
+              </div>
+            )}
+
+            {!pitchDraft && !activePitch && !pitchLoading && (
+              <p style={{ color: '#a0aec0', fontSize: '0.85rem' }}>Click "Generate Pitch" to create a personalized elevator pitch for this company based on your resume.</p>
+            )}
+          </div>
         </div> {/* end scrollable body */}
       </div>
     </div>
@@ -429,7 +449,7 @@ function Companies() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: '#718096', fontWeight: 600, minWidth: '90px' }}>Sort:</span>
-            <FilterChip label="A–Z" active={true} onClick={() => {}} />
+            <FilterChip label="A–Z" active={true} onClick={() => { }} />
             <button disabled style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '0.82rem', border: '2px solid #e2e8f0', background: '#f7f7f7', color: '#a0aec0', cursor: 'not-allowed' }} title="Coming soon">Fit Score</button>
             {hasActiveFilters && (
               <button onClick={clearFilters} style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '0.82rem', border: '2px solid #e53e3e', background: '#fff', color: '#e53e3e', cursor: 'pointer', fontWeight: 600 }}>
