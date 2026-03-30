@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '../context/AuthContext';
-import { listCompanies, getCompany, saveCompany, unsaveCompany, listSavedCompanies, generateElevatorPitch, savePitch } from '../services/api';
+import { listCompanies, getCompany, saveCompany, unsaveCompany, listSavedCompanies, generateElevatorPitch, savePitch, rankCompanies } from '../services/api';
 
 const EVENT_ID = 'evt_umich_fall_2025';
 
@@ -73,7 +73,19 @@ function FilterChip({ label, active, onClick }) {
   );
 }
 
-function CompanyCard({ company, isSaved, onSaveToggle, onClick }) {
+function ScoreBadge({ score }) {
+  if (score == null) return null;
+  const color = score >= 7 ? '#38a169' : score >= 5 ? '#dd6b20' : '#718096';
+  return (
+    <span style={{
+      fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px',
+      background: color + '18', color, border: `1px solid ${color}44`,
+      whiteSpace: 'nowrap',
+    }}>{score}/10</span>
+  );
+}
+
+function CompanyCard({ company, isSaved, onSaveToggle, onClick, score }) {
   const sponsor = sponsorSummary(company.sponsorship);
   return (
     <div
@@ -100,11 +112,14 @@ function CompanyCard({ company, isSaved, onSaveToggle, onClick }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingRight: '28px' }}>
         <h4 style={{ margin: 0, fontSize: '1rem', color: '#1a202c' }}>{company.name}</h4>
-        <span style={{
-          fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: '999px',
-          background: sponsor.color + '18', color: sponsor.color, border: `1px solid ${sponsor.color}44`,
-          whiteSpace: 'nowrap', marginLeft: '8px',
-        }}>{sponsor.label}</span>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: '8px' }}>
+          <ScoreBadge score={score} />
+          <span style={{
+            fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: '999px',
+            background: sponsor.color + '18', color: sponsor.color, border: `1px solid ${sponsor.color}44`,
+            whiteSpace: 'nowrap',
+          }}>{sponsor.label}</span>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -126,7 +141,7 @@ function CompanyCard({ company, isSaved, onSaveToggle, onClick }) {
   );
 }
 
-function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onPitchSaved, token }) {
+function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onPitchSaved, token, score }) {
   const sponsor = sponsorSummary(company.sponsorship);
   const [pitchDraft, setPitchDraft] = useState('');
   const [pitchLoading, setPitchLoading] = useState(false);
@@ -169,6 +184,7 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{company.name}</h2>
+            <ScoreBadge score={score} />
             <button
               onClick={() => onSaveToggle(company)}
               title={isSaved ? 'Unsave' : 'Save'}
@@ -293,6 +309,11 @@ function Companies() {
   const [modalLoading, setModalLoading] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
 
+  // Fit score state
+  const [scoreMap, setScoreMap] = useState({}); // company_id -> score (0–10)
+  const [scoresLoading, setScoresLoading] = useState(false);
+  const [sortByFit, setSortByFit] = useState(false);
+
   // Filters — all multi-select (empty = show all)
   const [filterDays, setFilterDays] = useState([]);
   const [filterSponsorships, setFilterSponsorships] = useState([]);
@@ -318,6 +339,19 @@ function Companies() {
         setSavedMap(map);
       }
     });
+  }, [token]);
+
+  // Fetch fit scores (pure computation, no OpenAI needed)
+  useEffect(() => {
+    if (!token) return;
+    setScoresLoading(true);
+    rankCompanies(token, EVENT_ID).then(result => {
+      if (result && result.matches && Array.isArray(result.matches)) {
+        const map = {};
+        result.matches.forEach(m => { map[m.company_id] = m.score; });
+        setScoreMap(map);
+      }
+    }).finally(() => setScoresLoading(false));
   }, [token]);
 
   const handleSaveToggle = useCallback(async (company) => {
@@ -370,7 +404,7 @@ function Companies() {
   }, [companies]);
 
 
-  const hasActiveFilters = filterDays.length > 0 || filterSponsorships.length > 0 || filterPositions.length > 0 || filterRegions.length > 0 || search !== '';
+  const hasActiveFilters = filterDays.length > 0 || filterSponsorships.length > 0 || filterPositions.length > 0 || filterRegions.length > 0 || search !== '' || sortByFit;
 
   const clearFilters = () => {
     setFilterDays([]);
@@ -378,6 +412,7 @@ function Companies() {
     setFilterPositions([]);
     setFilterRegions([]);
     setSearch('');
+    setSortByFit(false);
   };
 
   const toggle = (setter) => (val) => setter(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
@@ -409,15 +444,18 @@ function Companies() {
     if (filterRegions.length > 0) {
       result = result.filter(c => filterRegions.some(fr => c.regions?.includes(fr)));
     }
+    if (sortByFit) {
+      result = [...result].sort((a, b) => (scoreMap[b.company_id] ?? -1) - (scoreMap[a.company_id] ?? -1));
+    }
     return result;
-  }, [companies, search, savedMap, showSaved, filterDays, filterSponsorships, filterPositions, filterRegions]);
+  }, [companies, search, savedMap, showSaved, filterDays, filterSponsorships, filterPositions, filterRegions, sortByFit, scoreMap]);
 
   const savedCount = Object.keys(savedMap).length;
 
   return (
     <div className="dashboard-container">
       <nav className="navbar">
-        <div className="nav-brand"><h2>AI4Careers</h2></div>
+        <div className="nav-brand" onClick={() => navigate("/")}><h2>AI4Careers</h2></div>
         <div className="nav-links">
           <span className="user-name">Hello, {user?.name}</span>
           <button className="btn-secondary" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
@@ -485,8 +523,12 @@ function Companies() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: '#718096', fontWeight: 600, minWidth: '90px' }}>Sort:</span>
-            <FilterChip label="A–Z" active={true} onClick={() => { }} />
-            <button disabled style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '0.82rem', border: '2px solid #e2e8f0', background: '#f7f7f7', color: '#a0aec0', cursor: 'not-allowed' }} title="Coming soon">Fit Score</button>
+            <FilterChip label="A–Z" active={!sortByFit} onClick={() => setSortByFit(false)} />
+            <FilterChip
+              label={scoresLoading ? 'Loading scores…' : 'Fit Score'}
+              active={sortByFit}
+              onClick={() => { if (!scoresLoading) setSortByFit(true); }}
+            />
             {hasActiveFilters && (
               <button onClick={clearFilters} style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '0.82rem', border: '2px solid #e53e3e', background: '#fff', color: '#e53e3e', cursor: 'pointer', fontWeight: 600 }}>
                 ✕ Clear Filters
@@ -514,6 +556,7 @@ function Companies() {
                   isSaved={!!savedMap[c.company_id]}
                   onSaveToggle={handleSaveToggle}
                   onClick={() => handleCompanyClick(c)}
+                  score={scoreMap[c.company_id] ?? null}
                 />
               ))}
             </div>
@@ -536,6 +579,7 @@ function Companies() {
           savedPitch={savedMap[selected.company_id]?.pitch || ''}
           onPitchSaved={handlePitchSaved}
           token={token}
+          score={scoreMap[selected.company_id] ?? null}
         />
       )}
     </div>

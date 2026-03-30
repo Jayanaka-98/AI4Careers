@@ -67,7 +67,7 @@ function Dashboard() {
   return (
     <div className="dashboard-container">
       <nav className="navbar">
-        <div className="nav-brand"><h2>AI4Careers</h2></div>
+        <div className="nav-brand" onClick={() => navigate("/")}><h2>AI4Careers</h2></div>
         <div className="nav-links">
           <span className="user-name">Hello, {user.name}</span>
           <button onClick={() => { logout(); navigate('/login'); }} className="btn-secondary">Logout</button>

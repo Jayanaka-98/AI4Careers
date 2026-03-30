@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
@@ -9,6 +9,7 @@ import ResumeUpload from './pages/ResumeUpload';
 import ChatWithAI from './pages/ChatWithAI';
 import Profile from './pages/Profile';
 import Companies from './pages/Companies';
+import Landing from './pages/Landing';
 import './App.css';
 
 function App() {
@@ -58,7 +59,7 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Landing />} />
         </Routes>
       </AuthProvider>
     </Router>

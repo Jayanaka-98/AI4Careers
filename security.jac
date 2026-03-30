@@ -3,7 +3,7 @@ import from datetime { datetime }
 import from uuid { uuid4 }
 
 """Get current ISO timestamp."""
-def now_iso -> str {
+def now_iso() -> str {
     return datetime.now().isoformat();
 }
 

@@ -2,7 +2,7 @@
 import from db { init_db }
 import from auth { Signup, Login, Me, UpdatePreferences }
 import from resume { ResumeUpload, GetResume, ListResumes, DeleteResume }
-import from career_fair { ListEvents, ListCompanies, GetCompany, ListRoles, SaveCompany, UnsaveCompany, ListSavedCompanies, SavePitch }
+import from career_fair { ListEvents, ListCompanies, GetCompany, ListRoles, SaveCompany, UnsaveCompany, ListSavedCompanies, SavePitch, RankCompanies }
 import from ai_chat { ChatWithAI, GenerateElevatorPitch }
 # Note: Walkers are automatically exposed as REST API endpoints at /walker/WalkerName
 # Example endpoints:

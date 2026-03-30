@@ -1,6 +1,7 @@
 # career_fair.jac
 import from db { get_all_events, get_companies, get_company, get_roles, save_company, unsave_company, list_saved_companies, save_pitch }
 import from security { token_to_user_id }
+import from matching { rank_companies_for_user }
 
 walker:pub ListEvents {
     can list_events with Root entry {
@@ -93,6 +94,18 @@ walker:pub ListSavedCompanies {
         if uid == "" { report {"error": "unauthorized"}; return; }
         saved = list_saved_companies(uid, self.event_id);
         report saved;
+    }
+}
+
+walker:pub RankCompanies {
+    has token: str;
+    has event_id: str = "evt_umich_fall_2025";
+
+    can rank with Root entry {
+        uid = token_to_user_id(self.token);
+        if uid == "" { report {"error": "unauthorized"}; return; }
+        result = rank_companies_for_user(uid, self.event_id);
+        report result;
     }
 }
 

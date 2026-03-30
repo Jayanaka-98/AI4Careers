@@ -202,6 +202,15 @@ export const generateElevatorPitch = async (token, company_id, event_id) => {
   return { error: 'Pitch generation failed' };
 };
 
+export const rankCompanies = async (token, event_id) => {
+  const response = await api.post('/walker/RankCompanies', { token, event_id });
+  const jacResponse = response.data;
+  if (jacResponse.ok && jacResponse.data.reports && jacResponse.data.reports.length > 0) {
+    return jacResponse.data.reports[0];
+  }
+  return { error: 'Ranking failed' };
+};
+
 export const savePitch = async (token, company_id, event_id, pitch) => {
   const response = await api.post('/walker/SavePitch', { token, company_id, event_id, pitch });
   const jacResponse = response.data;

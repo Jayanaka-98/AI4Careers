@@ -8,7 +8,7 @@ import from datetime { datetime }
 glob DB_PATH: str = os.path.join(".jac", "data", "ai4careers.db");
 
 """Get a connection to the database."""
-def _conn -> sqlite3.Connection {
+def _conn() -> sqlite3.Connection {
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True);
     conn = sqlite3.connect(DB_PATH);
     conn.row_factory = sqlite3.Row;
@@ -18,7 +18,7 @@ def _conn -> sqlite3.Connection {
 }
 
 """Initialize database tables."""
-def init_db -> None {
+def init_db() -> None {
     conn = _conn();
     c = conn.cursor();
 
@@ -400,7 +400,7 @@ def delete_resume(resume_id: str, user_id: str) -> bool {
 
 # ========== Event/Company/Role Operations ==========
 """Get all events."""
-def get_all_events -> list {
+def get_all_events() -> list {
     conn = _conn();
     rows = conn.execute("SELECT * FROM events").fetchall();
     conn.close();

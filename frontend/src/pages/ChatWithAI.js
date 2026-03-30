@@ -156,7 +156,7 @@ function ChatWithAI() {
     return (
         <div className="chat-page">
             <nav className="navbar">
-                <div className="nav-brand">
+                <div className="nav-brand" onClick={() => navigate("/")}>
                     <h2>AI4Careers</h2>
                 </div>
                 <div className="nav-links">

@@ -183,7 +183,7 @@ function Profile() {
   return (
     <div className="dashboard-container">
       <nav className="navbar">
-        <div className="nav-brand"><h2>AI4Careers</h2></div>
+        <div className="nav-brand" onClick={() => navigate("/")}><h2>AI4Careers</h2></div>
         <div className="nav-links">
           <span className="user-name">Hello, {user?.name}</span>
           <button className="btn-secondary" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
@@ -198,7 +198,7 @@ function Profile() {
         <div className="card" style={{ marginBottom: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>My Resumes</h3>
-            <button className="btn-primary" onClick={() => navigate('/resume-upload')}>+ Upload New</button>
+            <button className="btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/resume-upload')}>+ Upload New</button>
           </div>
 
           {resumeError && <div className="error-message">{resumeError}</div>}
