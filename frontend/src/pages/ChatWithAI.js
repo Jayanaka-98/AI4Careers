@@ -31,7 +31,7 @@ function ChatWithAI() {
     const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: "Hi! I'm your AI career coach. Here's what I can do:\n\n**/match** → rank all companies by fit with your resume\n**/match [company]** → score your fit with one specific company\n**/pitch** → generate a tailored elevator pitch for a company\n**/optimize** → polish and strengthen your resume text\n**/visual** → upload a company logo to identify it and score your fit\n\nYou can also upload an image directly without any command and I'll treat it as /visual.\n\nOr just ask me anything — about sponsorship, locations, majors, how to prioritize the fair, and more.",
+            content: "Hi! I'm your AI career coach. Here's what I can do:\n\n**/match** → rank all companies by fit with your resume\n\n**/match [company]** → score your fit with one specific company\n\n**/pitch** → generate a tailored elevator pitch for a company\n\n**/optimize** → polish and strengthen your resume text\n\n**/visual** → upload a company logo to identify it and score your fit\n\nYou can also upload an image directly without any command and I'll treat it as /visual.\n\nOr just ask me anything — sponsorship, locations, majors, how to prioritize the fair, and more.",
         },
     ]);
     const [input, setInput] = useState('');
