@@ -74,14 +74,34 @@ function Dashboard() {
         </div>
       </nav>
 
-      <div className="dashboard-content">
+      <div className="dashboard-content" style={{ 
+        maxWidth: '1400px', 
+        width: '95%', 
+        margin: '0 auto', 
+        paddingTop: '2rem' 
+      }}>
         <div className="welcome-section">
           <h1>Welcome back, {user.name}!</h1>
           <p>Your career fair assistant is ready to help you succeed.</p>
         </div>
 
-        <div className="dashboard-grid">
-          <div className="card">
+        <div style={{
+          marginBottom: '1rem',
+          fontSize: '1.2rem',
+          fontWeight: '600',
+          color: '#718096',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          Dashboard
+        </div>
+
+        <div className="dashboard-grid" style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1.25fr 1fr', 
+          gap: '2rem' 
+        }}>
+          <div className="card" style={{ minHeight: '400px' }}>
             <h3>Profile</h3>
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Resumes uploaded:</strong> {user.resume_count ?? 0}</p>
@@ -91,9 +111,21 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="card">
-            <h3>Quick Actions</h3>
-            <div className="action-buttons">
+          <div className="card" style={{ 
+            minHeight: '400px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center' 
+          }}>
+            <h3 style={{ width: '100%', textAlign: 'left' }}>Quick Actions</h3>
+            <div className="action-buttons" style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              width: '100%', 
+              maxWidth: '320px', 
+              gap: '16px', 
+              marginTop: '1rem' 
+            }}>
               <button className="btn-action" onClick={() => navigate('/resume-upload')}>Upload Resume</button>
               <button className="btn-action" onClick={() => navigate('/profile')}>My Profile & Preferences</button>
               <button className="btn-action" onClick={() => navigate('/companies')}>Career Fair Companies</button>
@@ -101,7 +133,7 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card" style={{ minHeight: '400px' }}>
             <h3>Getting Started</h3>
             <ul className="checklist">
               <li>✓ Create your account</li>
