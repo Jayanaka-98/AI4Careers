@@ -18,6 +18,10 @@ entry-point = "main.jac"
 [plugins.byllm.model]
 default_model = "gpt-4o-mini"
 
+[plugins.byllm.visual]
+openai_model = "gpt-5.4-nano"
+anthropic_model = "claude-3-5-haiku-20241022"
+
 [plugins.byllm.call_params]
 temperature = 0.2
 

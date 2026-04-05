@@ -1,12 +1,14 @@
 import os;
 import json;
+import tomllib;
 import from urllib.request { Request, urlopen }
 import from urllib.error { HTTPError }
 
 import from db { get_companies_full }
 import from matching { normalize_company_query }
 
-glob VISUAL_MODEL: str = "gpt-5.4-nano";
+glob DEFAULT_OPENAI_VISUAL_MODEL: str = "gpt-5.4-nano";
+glob DEFAULT_ANTHROPIC_VISUAL_MODEL: str = "claude-3-5-haiku-20241022";
 
 glob COMPANY_ALIASES: dict = {
     "KLA": ["kla", "kla corporation"],
@@ -168,77 +170,221 @@ def extract_response_text(parsed: dict) -> str {
     return "";
 }
 
+def _load_local_jac_toml() -> dict {
+    try {
+        with open("jac.toml", "rb") as f {
+            return tomllib.load(f);
+        }
+    } except Exception as e {
+        return {};
+    }
+}
+
+def _visual_model_config() -> dict {
+    cfg = _load_local_jac_toml();
+
+    openai_model: str = DEFAULT_OPENAI_VISUAL_MODEL;
+    anthropic_model: str = DEFAULT_ANTHROPIC_VISUAL_MODEL;
+
+    if "plugins" in cfg and "byllm" in cfg["plugins"] and "visual" in cfg["plugins"]["byllm"] {
+        visual_cfg = cfg["plugins"]["byllm"]["visual"];
+
+        if "openai_model" in visual_cfg and str(visual_cfg["openai_model"]).strip() != "" {
+            openai_model = str(visual_cfg["openai_model"]).strip();
+        }
+
+        if "anthropic_model" in visual_cfg and str(visual_cfg["anthropic_model"]).strip() != "" {
+            anthropic_model = str(visual_cfg["anthropic_model"]).strip();
+        }
+    }
+
+    return {
+        "openai_model": openai_model,
+        "anthropic_model": anthropic_model
+    };
+}
+
+def _choose_visual_provider() -> dict {
+    openai_key = os.getenv("OPENAI_API_KEY");
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY");
+    models = _visual_model_config();
+
+    if openai_key is not None and openai_key.strip() != "" {
+        return {
+            "provider": "openai",
+            "api_key": openai_key,
+            "model": models["openai_model"]
+        };
+    }
+
+    if anthropic_key is not None and anthropic_key.strip() != "" {
+        return {
+            "provider": "anthropic",
+            "api_key": anthropic_key,
+            "model": models["anthropic_model"]
+        };
+    }
+
+    return {"error": "missing_visual_api_key"};
+}
+
 def _call_visual_json(
     prompt: str,
     image_data: str,
     image_mime_type: str,
     schema: dict
 ) -> dict {
-    api_key = os.getenv("OPENAI_API_KEY");
-    if api_key is None or api_key == "" {
-        return {"error": "missing_openai_api_key"};
+    provider_info = _choose_visual_provider();
+    if "error" in provider_info {
+        return provider_info;
     }
+
+    provider: str = str(provider_info["provider"]);
+    api_key: str = str(provider_info["api_key"]);
+    model: str = str(provider_info["model"]);
 
     mime_type: str = image_mime_type.strip() if image_mime_type.strip() != "" else "image/jpeg";
-    image_url: str = "data:" + mime_type + ";base64," + image_data;
 
-    payload: dict = {
-        "model": VISUAL_MODEL,
-        "input": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": prompt},
-                    {"type": "input_image", "image_url": image_url}
-                ]
+    if provider == "openai" {
+        image_url: str = "data:" + mime_type + ";base64," + image_data;
+
+        payload: dict = {
+            "model": model,
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": prompt},
+                        {"type": "input_image", "image_url": image_url}
+                    ]
+                }
+            ],
+            "text": {
+                "format": {
+                    "type": "json_schema",
+                    "name": "visual_company_identifier",
+                    "schema": schema
+                }
             }
-        ],
-        "text": {
-            "format": {
-                "type": "json_schema",
-                "name": "visual_company_identifier",
-                "schema": schema
-            }
-        }
-    };
+        };
 
-    body: bytes = json.dumps(payload).encode("utf-8");
+        body: bytes = json.dumps(payload).encode("utf-8");
 
-    req = Request(
-        "https://api.openai.com/v1/responses",
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + api_key
-        },
-        method="POST"
-    );
-
-    try {
-        resp = urlopen(req);
-        raw: str = resp.read().decode("utf-8");
-        parsed = json.loads(raw);
-        output_text: str = extract_response_text(parsed);
-
-        if output_text == "" {
-            return {"error": "empty_visual_output", "details": raw};
-        }
+        req = Request(
+            "https://api.openai.com/v1/responses",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + api_key
+            },
+            method="POST"
+        );
 
         try {
-            result = json.loads(output_text);
-        } except Exception as e {
-            return {"error": "invalid_visual_output", "details": output_text};
-        }
+            resp = urlopen(req);
+            raw: str = resp.read().decode("utf-8");
+            parsed = json.loads(raw);
+            output_text: str = extract_response_text(parsed);
 
-        return {"result": result, "raw": raw, "output_text": output_text};
-    } except HTTPError as e {
-        return {
-            "error": "visual_api_http_error",
-            "details": "HTTP request to OpenAI failed"
-        };
-    } except Exception as e {
-        return {"error": "visual_api_failed", "details": str(e)};
+            if output_text == "" {
+                return {"error": "empty_visual_output", "details": raw};
+            }
+
+            try {
+                result = json.loads(output_text);
+            } except Exception as e {
+                return {"error": "invalid_visual_output", "details": output_text};
+            }
+
+            return {"result": result, "raw": raw, "output_text": output_text};
+        } except HTTPError as e {
+            return {
+                "error": "visual_api_http_error",
+                "details": "OpenAI visual request failed"
+            };
+        } except Exception as e {
+            return {"error": "visual_api_failed", "details": str(e)};
+        }
     }
+
+    if provider == "anthropic" {
+        payload: dict = {
+            "model": model,
+            "max_tokens": 512,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt + "\n\nReturn valid JSON only."
+                        },
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": mime_type,
+                                "data": image_data
+                            }
+                        }
+                    ]
+                }
+            ]
+        };
+
+        body: bytes = json.dumps(payload).encode("utf-8");
+
+        req = Request(
+            "https://api.anthropic.com/v1/messages",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01"
+            },
+            method="POST"
+        );
+
+        try {
+            resp = urlopen(req);
+            raw: str = resp.read().decode("utf-8");
+            parsed = json.loads(raw);
+            output_text: str = "";
+
+            if "content" in parsed {
+                for block in parsed["content"] {
+                    if "text" in block {
+                        block_text: str = str(block["text"]).strip();
+                        if block_text != "" {
+                            output_text = block_text;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if output_text == "" {
+                return {"error": "empty_visual_output", "details": raw};
+            }
+
+            try {
+                result = json.loads(output_text);
+            } except Exception as e {
+                return {"error": "invalid_visual_output", "details": output_text};
+            }
+
+            return {"result": result, "raw": raw, "output_text": output_text};
+        } except HTTPError as e {
+            return {
+                "error": "visual_api_http_error",
+                "details": "Anthropic visual request failed"
+            };
+        } except Exception as e {
+            return {"error": "visual_api_failed", "details": str(e)};
+        }
+    }
+
+    return {"error": "unsupported_visual_provider"};
 }
 
 def _first_pass_visual_extraction(

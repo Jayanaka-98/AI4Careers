@@ -253,10 +253,10 @@ walker:pub ChatWithAI {
                 );
 
                 if "error" in visual_result {
-                    if visual_result["error"] == "missing_openai_api_key" {
+                    if visual_result["error"] == "missing_visual_api_key" {
                         report {
                             "error": "visual_failed",
-                            "details": "OPENAI_API_KEY is not configured for image identification."
+                            "details": "Neither OPENAI_API_KEY nor ANTHROPIC_API_KEY is configured for image identification."
                         };
                         return;
                     }
