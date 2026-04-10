@@ -17,14 +17,24 @@ AI-powered career fair assistant for University of Michigan students: explore em
 - Setup / readiness-style guidance to encourage resume and profile completion
 
 ### Resume Lab (structured resume versions)
+Resume Lab is the main place to own multiple resume versions, run **AI job-specific workflows**, and export for applications.
+
+**Core workflow**
 - **Upload** PDF/DOCX or paste plain text; the LLM parses into structured sections (summary, experience, projects, education, skills, certifications)
-- **Multiple versions** per account with version title, **area** (role-focus) tags, and **company** tags for organization
-- **Dashboard**: filter by area and company tag, sort by date or name; **preview** a version; open a version to edit
-- **Editor**: edit content, reorder sections and bullets, **tailor** to a job description (optional save as new version), **match skills** to a JD, **cover letter** draft, bullet shorten/lengthen/rewrite
-- **Metadata**: edit tags (area, company) from the detail view
-- **Export**: print/PDF from the browser, **DOCX** download
-- **Edit mode**: adjust version title, name on resume, and **custom section headings** (stored in parsed data); inline contact fields sync with saved parsed contact
-- Fit scoring and chat can use your **latest** resume from either legacy `resumes` or Resume Lab `resume_versions` (whichever was updated most recently)
+- **Multiple versions** per account with version title, **area** (role-focus) tags, and **company** tags so versions stay **organized** by target role and employer
+- **Dashboard**: filter by area and company tag, sort by date or name; **preview** a version; open any version to edit in full detail
+- **Editor**: rich editing—reorder sections and bullets, tweak wording, shorten/lengthen/rewrite bullets with AI, edit version title, name on resume, and **custom section headings**
+- **Metadata**: edit area/company tags from the detail view (**Edit tags**)
+- **Contact** fields that flow into **PDF / DOCX** exports when filled
+- **Export**: in-browser **preview**, **print/PDF**, and **DOCX** download
+
+**Job-targeted AI**
+- **Resume optimization for a job description** — Paste a JD and **tailor** the resume to that role (highlights, emphasis, alignment); optionally **save as a new version** so your base resume stays intact
+- **Skills matching** — Compare your resume to a job description: see overlap, gaps, and targeted suggestions (`RTMatchSkills`)
+- **Cover letter generation** — Draft a cover letter from your resume + target role/company context (`RTGenerateCoverLetter`)
+
+**Platform integration**
+- Career-fair **fit scoring** and the AI **chat** can use your **latest** resume from either legacy `resumes` or Resume Lab **`resume_versions`** (whichever was updated most recently)
 
 ### Legacy profile resume (optional)
 - **Profile** still supports the original PDF upload flow (`ResumeUpload`) for users who rely on that path
@@ -60,9 +70,12 @@ AI-powered career fair assistant for University of Michigan students: explore em
 - Logo upload → LLM vision → match to fair roster (with alias handling)
 - Visual model can be configured separately from the main chat model in `jac.toml` (OpenAI and/or Anthropic)
 
-### Experiences & behavioral prep
-- **Experiences**: structured work/project entries (add, edit, import from a resume version)
-- **BQ prep**: STAR-style stories linked to experiences, AI-assisted story building and suggestions
+### Experiences & behavioral (BQ) prep
+Designed so behavioral prep stays **easy and organized around real experience**.
+
+- **Experiences** — Structured work/project entries (add, edit, **import from a Resume Lab version** so your stories stay tied to what’s on your resume)
+- **BQ prep** — Build **STAR-style stories** per experience; suggested prompts and AI-assisted drafting so you’re not starting from a blank page
+- **Story coach** — AI help to **surface and refine the best story** for a question (including **recommendation-style** flows that point you toward a strong experience/story match)
 
 ### User profile & preferences
 - Sponsorship need, work authorization, preferred locations, work modes, role types
@@ -303,12 +316,12 @@ Restart `npm start` after changing env vars.
 ## Using the application (instructions)
 
 1. **Create an account** — Sign up from the landing page, then log in. If you already have an old session token, log in still works: `Login` and `Signup` requests do not attach a stale token to the walker payload.
-2. **Add a resume** — Open **Resume Lab** from the dashboard. Upload a file or paste text, set version name and tags, then open the version to review or edit. Use **Preview** / **PDF** / **DOCX** as needed.
+2. **Add a resume** — Open **Resume Lab** from the dashboard. Upload a file or paste text, set version name and tags, then open the version to review or edit. Use **Preview** / **PDF** / **DOCX** as needed. From a resume version, use the sidebar tools to **tailor to a job description** (resume optimization), run **skills matching** against a JD, and **generate a cover letter** when you have role/company context.
 3. **Set preferences** — Open **Profile** and fill sponsorship, locations, work modes, and role types so company ranking and filters match your situation.
 4. **Explore employers** — Open **Companies**, use filters, open a company, save it, and generate or paste a **pitch** where offered.
 5. **Rank by fit** — From chat, run `/match` or use **Match me with companies**, or use ranking elsewhere in the UI that calls `RankCompanies`. Ensure your latest resume is the one you want (Resume Lab or legacy upload).
 6. **Chat** — Ask free-form questions or use `/pitch`, `/optimize`, `/visual` with an image when configured.
-7. **Experiences & BQ** — Use **Experiences** to maintain entries and **BQ** (behavioral prep) for STAR stories and AI suggestions.
+7. **Experiences & BQ** — Add **Experiences** (or import from Resume Lab). Open **BQ** prep to attach STAR stories to each role and use the **story coach** when you have an interview question—it helps you pick and shape the **best story**.
 
 ---
 
