@@ -154,7 +154,7 @@ function Landing() {
           <span onClick={() => navigate('/login')} className="landing-footer-link">Log In</span>
           <span onClick={() => navigate('/signup')} className="landing-footer-link">Sign Up</span>
         </div>
-        <div className="landing-footer-copy">EECS 449 · University of Michigan · © 2026 AI4Careers</div>
+        <div className="landing-footer-copy">EECS 449 · University of Michigan · Built with Jaseci · © 2026 AI4Careers</div>
       </footer>
     </div>
   );

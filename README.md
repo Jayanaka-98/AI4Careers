@@ -106,8 +106,10 @@ Designed so behavioral prep stays **easy and organized around real experience**.
 |------|-----------------|-------|
 | Python | **3.12.x** | Must be 3.12 — tested with 3.12.8 |
 | Node.js | **16+** | Tested with 23.7.0 |
-| jaclang | **0.12.2** | Installed inside venv |
-| byllm | **0.5.7** | Installed inside venv |
+| jaclang | **0.12.2** | Installed via `requirements.txt` |
+| byllm | **0.5.7** | Installed via `requirements.txt` |
+| pypdf | latest | Required for PDF resume parsing |
+| python-docx | latest | Required for DOCX resume parsing and export |
 
 > **jaclang version is critical.** The walkers use `walker:pub` visibility and `by llm()` syntax that is version-specific. Do not upgrade without testing.
 
@@ -126,16 +128,18 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install Jac and LLM support
+### 3. Install backend dependencies
 
 ```bash
-.venv/bin/pip install "jaclang==0.12.2" "byllm==0.5.7"
+.venv/bin/pip install -r requirements.txt
 ```
 
 Verify:
 ```bash
 .venv/bin/jac --version    # must print 0.12.2
 .venv/bin/pip show byllm   # must show Version: 0.5.7
+.venv/bin/pip show pypdf
+.venv/bin/pip show python-docx
 ```
 
 ### 4. Configure your LLM model

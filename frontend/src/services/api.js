@@ -9,8 +9,14 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
+  const url = config.url || '';
+  const isAuthFreeWalker =
+    url.includes('/walker/Login') || url.includes('/walker/Signup');
+
+  if (token && !isAuthFreeWalker) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (config.headers?.Authorization) {
+    delete config.headers.Authorization;
   }
   return config;
 });

@@ -1,0 +1,4 @@
+jaclang==0.12.2
+byllm==0.5.7
+pypdf
+python-docx
