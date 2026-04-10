@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '../context/AuthContext';
 import { listCompanies, getCompany, saveCompany, unsaveCompany, listSavedCompanies, generateElevatorPitch, savePitch, rankCompanies } from '../services/api';
+import Layout from '../components/Layout';
 
 const EVENT_ID = 'evt_umich_fall_2025';
 
@@ -72,9 +74,9 @@ function FilterChip({ label, active, onClick }) {
       onClick={onClick}
       style={{
         padding: '5px 14px', borderRadius: '999px', fontSize: '0.82rem', cursor: 'pointer',
-        border: active ? '2px solid #667eea' : '2px solid #e2e8f0',
-        background: active ? '#667eea' : '#fff',
-        color: active ? '#fff' : '#4a5568',
+        border: active ? '2px solid #1a1a18' : '1px solid #d4caba',
+        background: active ? '#1a1a18' : '#fff',
+        color: active ? '#f5f0e8' : '#7a7268',
         fontWeight: active ? 600 : 400,
         transition: 'all 0.15s',
       }}
@@ -100,7 +102,7 @@ function CompanyCard({ company, isSaved, onSaveToggle, onClick, score }) {
     <div
       onClick={onClick}
       style={{
-        background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px',
+        background: '#fff', border: '1px solid #d4caba', borderRadius: '16px',
         padding: '16px', cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s',
         display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative',
       }}
@@ -120,7 +122,7 @@ function CompanyCard({ company, isSaved, onSaveToggle, onClick, score }) {
       >♥</button>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingRight: '28px' }}>
-        <h4 style={{ margin: 0, fontSize: '1rem', color: '#1a202c' }}>{company.name}</h4>
+        <h4 style={{ margin: 0, fontSize: '1rem', color: '#1a1a18' }}>{company.name}</h4>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: '8px' }}>
           <ScoreBadge score={score} />
           <span style={{
@@ -133,17 +135,17 @@ function CompanyCard({ company, isSaved, onSaveToggle, onClick, score }) {
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
         {company.positions?.map(p => (
-          <span key={p} style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '999px', background: '#ebf8ff', color: '#2b6cb0', border: '1px solid #bee3f8' }}>{p}</span>
+          <span key={p} style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '999px', background: '#ede8dc', color: '#5c574f', border: '1px solid #d4caba' }}>{p}</span>
         ))}
-        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '999px', background: '#f0fff4', color: '#276749', border: '1px solid #c6f6d5' }}>{company.is_multi_day ? 'Mon & Tue' : company.fair_day}</span>
+        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '999px', background: '#f5f0e8', color: '#7a7268', border: '1px solid #d4caba' }}>{company.is_multi_day ? 'Mon & Tue' : company.fair_day}</span>
       </div>
 
       {company.regions?.length > 0 && (
-        <p style={{ margin: 0, fontSize: '0.78rem', color: '#718096' }}>{company.regions.join(' · ')}</p>
+        <p style={{ margin: 0, fontSize: '0.78rem', color: '#7a7268' }}>{company.regions.join(' · ')}</p>
       )}
 
       <p style={{
-        margin: 0, fontSize: '0.78rem', color: '#4a5568',
+        margin: 0, fontSize: '0.78rem', color: '#7a7268',
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
       }}>{company.description}</p>
     </div>
@@ -151,6 +153,7 @@ function CompanyCard({ company, isSaved, onSaveToggle, onClick, score }) {
 }
 
 function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onPitchSaved, token, score }) {
+  const navigate = useNavigate();
   const sponsor = sponsorSummary(company.sponsorship, company.sponsorship_flag);
   const [pitchDraft, setPitchDraft] = useState('');
   const [pitchLoading, setPitchLoading] = useState(false);
@@ -187,12 +190,12 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: '#fff', borderRadius: '14px', maxWidth: '620px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        style={{ background: '#fff', border: '1px solid #d4caba', borderRadius: '16px', maxWidth: '740px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
       >
         {/* Sticky header — always visible */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid #ede8dc', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{company.name}</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1a1a18' }}>{company.name}</h2>
             <ScoreBadge score={score} />
             <button
               onClick={() => onSaveToggle(company)}
@@ -200,7 +203,7 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.3rem', color: isSaved ? '#e53e3e' : '#cbd5e0', padding: 0 }}
             >♥</button>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.6rem', cursor: 'pointer', color: '#718096', lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.6rem', cursor: 'pointer', color: '#7a7268', lineHeight: 1 }}>×</button>
         </div>
 
         {/* Scrollable body */}
@@ -215,24 +218,24 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
           {/* Position / Day pills */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
             {company.positions?.map(p => (
-              <span key={p} style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#ebf8ff', color: '#2b6cb0', border: '1px solid #bee3f8' }}>{p}</span>
+              <span key={p} style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#ede8dc', color: '#5c574f', border: '1px solid #d4caba' }}>{p}</span>
             ))}
-            <span style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#f0fff4', color: '#276749', border: '1px solid #c6f6d5' }}>{company.is_multi_day ? 'Mon & Tue' : company.fair_day}</span>
+            <span style={{ fontSize: '0.78rem', padding: '3px 10px', borderRadius: '999px', background: '#f5f0e8', color: '#7a7268', border: '1px solid #d4caba' }}>{company.is_multi_day ? 'Mon & Tue' : company.fair_day}</span>
           </div>
 
-          <p style={{ color: '#4a5568', lineHeight: 1.6, marginBottom: '16px' }}>{company.description}</p>
+          <p style={{ color: '#7a7268', lineHeight: 1.6, marginBottom: '16px' }}>{company.description}</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem', marginBottom: '20px' }}>
             {company.regions?.length > 0 && (
-              <div><strong>Regions</strong><p style={{ margin: '4px 0', color: '#718096' }}>{company.regions.join(', ')}</p></div>
+              <div><strong style={{ color: '#1a1a18' }}>Regions</strong><p style={{ margin: '4px 0', color: '#7a7268' }}>{company.regions.join(', ')}</p></div>
             )}
             {company.degree_levels?.length > 0 && (
-              <div><strong>Degree Levels</strong><p style={{ margin: '4px 0', color: '#718096' }}>{company.degree_levels.join(', ')}</p></div>
+              <div><strong style={{ color: '#1a1a18' }}>Degree Levels</strong><p style={{ margin: '4px 0', color: '#7a7268' }}>{company.degree_levels.join(', ')}</p></div>
             )}
             {company.sponsorship?.length > 0 && (
               <div style={{ gridColumn: '1 / -1' }}>
-                <strong>Sponsorship Details</strong>
-                <p style={{ margin: '4px 0', color: '#718096' }}>{company.sponsorship.join('; ')}</p>
+                <strong style={{ color: '#1a1a18' }}>Sponsorship Details</strong>
+                <p style={{ margin: '4px 0', color: '#7a7268' }}>{company.sponsorship.join('; ')}</p>
               </div>
             )}
           </div>
@@ -240,22 +243,45 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
           {/* Links */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
             {company.website && (
-              <a href={company.website} target="_blank" rel="noreferrer" className="btn-primary" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '8px', width: 'auto' }}>Website</a>
+              <a href={company.website} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '10px', width: 'auto', background: '#1a1a18', color: '#f5f0e8', border: 'none', cursor: 'pointer', display: 'inline-block', fontSize: '0.9rem' }}>Website</a>
             )}
             {company.careers_url && (
-              <a href={company.careers_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '8px', width: 'auto' }}>Careers Page</a>
+              <a href={company.careers_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', padding: '8px 18px', borderRadius: '10px', width: 'auto', background: 'transparent', color: '#1a1a18', border: '1px solid #d4caba', cursor: 'pointer', display: 'inline-block', fontSize: '0.9rem' }}>Careers Page</a>
             )}
           </div>
 
-          {/* Elevator Pitch Section */}
-          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+          {/* Prepare for this Company — resume + elevator pitch */}
+          <div style={{ borderTop: '1px solid #ede8dc', paddingTop: '20px' }}>
+            <p style={{ margin: '0 0 16px', fontSize: '0.95rem', fontWeight: 700, color: '#1a1a18' }}>Prepare for this Company</p>
+            <button
+              type="button"
+              onClick={() => navigate(`/resume-lab?company=${encodeURIComponent(company.name)}`)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#1a1a18',
+                color: '#f5f0e8',
+                borderRadius: 10,
+                padding: '10px 18px',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+                marginBottom: '20px',
+              }}
+            >
+              <FileText size={18} strokeWidth={2} aria-hidden />
+              Tailor Resume for {company.name}
+            </button>
+
+            <div style={{ borderTop: '1px solid #ede8dc', paddingTop: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <strong style={{ fontSize: '0.95rem' }}>Elevator Pitch</strong>
+              <strong style={{ fontSize: '0.95rem', color: '#1a1a18' }}>Elevator Pitch</strong>
               <button
                 onClick={handleGeneratePitch}
                 disabled={pitchLoading}
-                className="btn-secondary"
-                style={{ padding: '6px 14px', fontSize: '0.82rem', width: 'auto' }}
+                style={{ padding: '6px 14px', fontSize: '0.82rem', width: 'auto', background: 'transparent', color: '#1a1a18', border: '1px solid #d4caba', borderRadius: '10px', cursor: pitchLoading ? 'not-allowed' : 'pointer', opacity: pitchLoading ? 0.6 : 1 }}
               >{pitchLoading ? 'Generating...' : pitchDraft ? 'Regenerate' : 'Generate Pitch'}</button>
             </div>
 
@@ -263,8 +289,8 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
 
             {/* Saved pitch (if no active draft) */}
             {!pitchDraft && activePitch && (
-              <div style={{ background: '#f0fff4', border: '1px solid #c6f6d5', borderRadius: '8px', padding: '14px' }}>
-                <p style={{ fontSize: '0.75rem', color: '#276749', fontWeight: 600, marginBottom: '8px' }}>✓ Saved Pitch</p>
+              <div style={{ background: '#ede8dc', border: '1px solid #d4caba', borderRadius: '16px', padding: '14px' }}>
+                <p style={{ fontSize: '0.75rem', color: '#5c574f', fontWeight: 600, marginBottom: '8px' }}>✓ Saved Pitch</p>
                 <div className="chat-markdown" style={{ fontSize: '0.85rem' }}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{activePitch}</ReactMarkdown>
                 </div>
@@ -274,30 +300,31 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
             {/* Draft pitch */}
             {pitchDraft && (
               <div>
-                <div style={{ background: '#fffbeb', border: '1px solid #fbd38d', borderRadius: '8px', padding: '14px', marginBottom: '12px' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#b7791f', fontWeight: 600, marginBottom: '8px' }}>Draft — review before saving</p>
+                <div style={{ background: '#f5f0e8', border: '1px solid #d4caba', borderRadius: '16px', padding: '14px', marginBottom: '12px' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#7a7268', fontWeight: 600, marginBottom: '8px' }}>Draft — review before saving</p>
                   <div className="chat-markdown" style={{ fontSize: '0.85rem' }}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{pitchDraft}</ReactMarkdown>
                   </div>
                 </div>
                 {!pitchConfirmed ? (
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={handleConfirmPitch} className="btn-primary" style={{ width: 'auto', padding: '8px 18px' }}>
+                    <button onClick={handleConfirmPitch} style={{ width: 'auto', padding: '8px 18px', background: '#1a1a18', color: '#f5f0e8', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.9rem' }}>
                       ✓ Confirm & Save Pitch
                     </button>
-                    <button onClick={handleGeneratePitch} className="btn-secondary" style={{ width: 'auto', padding: '8px 18px' }}>
+                    <button onClick={handleGeneratePitch} style={{ width: 'auto', padding: '8px 18px', background: 'transparent', color: '#1a1a18', border: '1px solid #d4caba', borderRadius: '10px', cursor: 'pointer', fontSize: '0.9rem' }}>
                       Regenerate
                     </button>
                   </div>
                 ) : (
-                  <p style={{ color: '#38a169', fontWeight: 600, fontSize: '0.88rem' }}>✓ Pitch saved to your saved companies!</p>
+                  <p style={{ color: '#5c574f', fontWeight: 600, fontSize: '0.88rem' }}>✓ Pitch saved to your saved companies!</p>
                 )}
               </div>
             )}
 
             {!pitchDraft && !activePitch && !pitchLoading && (
-              <p style={{ color: '#a0aec0', fontSize: '0.85rem' }}>Click "Generate Pitch" to create a personalized elevator pitch for this company based on your resume.</p>
+              <p style={{ color: '#9a9288', fontSize: '0.85rem' }}>Click "Generate Pitch" to create a personalized elevator pitch for this company based on your resume.</p>
             )}
+            </div>
           </div>
         </div> {/* end scrollable body */}
       </div>
@@ -306,8 +333,7 @@ function CompanyModal({ company, onClose, isSaved, onSaveToggle, savedPitch, onP
 }
 
 function Companies() {
-  const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
 
   const [companies, setCompanies] = useState([]);
   const [savedMap, setSavedMap] = useState({}); // company_id -> { pitch }
@@ -472,21 +498,12 @@ function Companies() {
   const savedCount = Object.keys(savedMap).length;
 
   return (
-    <div className="dashboard-container">
-      <nav className="navbar">
-        <div className="nav-brand" onClick={() => navigate("/")}><h2>AI4Careers</h2></div>
-        <div className="nav-links">
-          <span className="user-name">Hello, {user?.name}</span>
-          <button className="btn-secondary" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
-          <button className="btn-secondary" onClick={() => { logout(); navigate('/login'); }}>Logout</button>
-        </div>
-      </nav>
-
-      <div className="dashboard-content">
+    <Layout>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 32, backgroundColor: '#f5f0e8' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
-            <h1 style={{ marginBottom: '4px' }}>UMich Fall 2025 Career Fair</h1>
-            <p style={{ color: '#718096', margin: 0 }}>{companies.length} companies · Sept 22–23, 2025</p>
+            <h1 style={{ marginBottom: '4px', color: '#1a1a18' }}>UMich Fall 2025 Career Fair</h1>
+            <p style={{ color: '#7a7268', margin: 0 }}>{companies.length} companies · Sept 22–23, 2025</p>
           </div>
         </div>
 
@@ -504,8 +521,8 @@ function Companies() {
           placeholder="Search by company name, position, region..."
           style={{
             width: '100%', padding: '10px 16px', fontSize: '0.95rem',
-            border: '1px solid #e2e8f0', borderRadius: '8px',
-            marginBottom: '12px', boxSizing: 'border-box', outline: 'none',
+            border: '1px solid #d4caba', borderRadius: '10px',
+            marginBottom: '12px', boxSizing: 'border-box', outline: 'none', background: '#fff', color: '#1a1a18',
           }}
         />
 
@@ -549,7 +566,7 @@ function Companies() {
               onClick={() => { if (!scoresLoading) setSortByFit(true); }}
             />
             {hasActiveFilters && (
-              <button onClick={clearFilters} style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '0.82rem', border: '2px solid #e53e3e', background: '#fff', color: '#e53e3e', cursor: 'pointer', fontWeight: 600 }}>
+              <button onClick={clearFilters} style={{ padding: '5px 14px', borderRadius: '10px', fontSize: '0.82rem', border: '1px solid #b91c1c', background: 'transparent', color: '#b91c1c', cursor: 'pointer', fontWeight: 600 }}>
                 ✕ Clear Filters
               </button>
             )}
@@ -601,7 +618,7 @@ function Companies() {
           score={scoreMap[selected.company_id] ?? null}
         />
       )}
-    </div>
+    </Layout>
   );
 }
 

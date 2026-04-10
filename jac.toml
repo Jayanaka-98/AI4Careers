@@ -11,7 +11,7 @@ entry-point = "main.jac"
 [plugins.client]
 
 [plugins.byllm.model]
-default_model = "claude-haiku-4-5-20251001"
+default_model = "gpt-4.1-nano"
 
 [plugins.byllm.call_params]
 temperature = 0.2

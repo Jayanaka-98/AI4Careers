@@ -1,53 +1,73 @@
 # AI4Careers
 
-AI-powered career fair assistant for University of Michigan students. Helps students discover companies, match their resume to opportunities, generate personalized elevator pitches, and navigate the career fair with an intelligent chatbot.
+AI-powered career fair assistant for University of Michigan students: explore employers, align your resume to roles, practice pitches, and get coached through an AI chat. The backend is written in **Jac**; the frontend is **React**.
 
-**Live data**: UMich Fall 2025 Career Fair — Sept 22–23, 2025
+**Sample data**: UMich Fall 2025 Career Fair — Sept 22–23, 2025 (`evt_umich_fall_2025`)
 
 ---
 
 ## Features
 
-### Career Fair Browser
-- Browse all companies at UMich Fall 2025 with filters: fair day, position type, sponsorship, region, major
-- Per-company detail view: description, positions, degree levels, majors, sponsorship policy, regions, website/careers links
-- Save companies to a personal list and store a custom elevator pitch per company
-- Sponsorship badge on every card: **Sponsors Visas** / **No Sponsorship** / **Check Details**
+### Landing & auth
+- Public landing page with sign-up and log-in
+- Session token stored in the browser; authenticated routes require login
 
-### AI-Powered Fit Scoring
-- Every company card shows a fit score (0–10) based on your uploaded resume
-- Sort companies by fit score
-- Computed locally — **zero API credits** — using a weighted algorithm across skills, domain, role type, sponsorship, degree, and location
+### Dashboard
+- Hub after login with links into Resume Lab, Companies, Chat, Profile, Experiences, and behavioral-question prep
+- Setup / readiness-style guidance to encourage resume and profile completion
 
-### AI Chatbot
-Chat in natural language or use structured commands:
+### Resume Lab (structured resume versions)
+- **Upload** PDF/DOCX or paste plain text; the LLM parses into structured sections (summary, experience, projects, education, skills, certifications)
+- **Multiple versions** per account with version title, **area** (role-focus) tags, and **company** tags for organization
+- **Dashboard**: filter by area and company tag, sort by date or name; **preview** a version; open a version to edit
+- **Editor**: edit content, reorder sections and bullets, **tailor** to a job description (optional save as new version), **match skills** to a JD, **cover letter** draft, bullet shorten/lengthen/rewrite
+- **Metadata**: edit tags (area, company) from the detail view
+- **Export**: print/PDF from the browser, **DOCX** download
+- **Edit mode**: adjust version title, name on resume, and **custom section headings** (stored in parsed data); inline contact fields sync with saved parsed contact
+- Fit scoring and chat can use your **latest** resume from either legacy `resumes` or Resume Lab `resume_versions` (whichever was updated most recently)
+
+### Legacy profile resume (optional)
+- **Profile** still supports the original PDF upload flow (`ResumeUpload`) for users who rely on that path
+- `/resume-upload` redirects to **Resume Lab**
+
+### Career fair browser
+- Browse companies for the configured event with filters: fair day, position type, sponsorship, region, major search
+- Company detail: description, positions, degree levels, majors, sponsorship, regions, links
+- **Save** employers and save a **custom elevator pitch** per saved company
+- Sponsorship badge on cards: **Sponsors Visas** / **No Sponsorship** / **Check Details**
+- Deep link from Companies with a company context query param where supported
+
+### AI-powered fit scoring (`RankCompanies` / card scores)
+- **Rank companies** by fit with your resume (algorithm in `matching.jac` — **no LLM calls** for the score itself)
+- Per-card fit scores use the same signals: skills, domain overlap, role type, sponsorship, degree, location — aligned with profile preferences where applicable
+- Robust parsing when resume data mixes list vs string shapes (Resume Lab vs legacy)
+
+### AI chatbot (`ChatWithAI`)
+- Natural language plus slash commands:
 
 | Command | What it does |
-|---------|-------------|
-| `/match` | Rank all companies by fit with your resume (returns top 10) |
-| `/match [company name]` | Score your fit with one specific company |
-| `/pitch` | Generate a 45–60 second tailored elevator pitch |
-| `/optimize` | AI-powered resume polish (preserves truth, improves formatting) |
-| `/visual` + image | Upload a company logo → identify the company → show fit score |
+|---------|--------------|
+| `/match` | Rank companies by resume fit |
+| `/match [company name]` | Score fit for one employer |
+| `/pitch` | Tailored elevator pitch |
+| `/optimize` | Resume polish (keeps facts, improves clarity/structure) |
+| `/visual` + image | Logo → identify company → fit context |
 
-Quick-action buttons in the chat UI trigger the main commands in one click. Free-form questions work too.
+- **Quick-action** buttons under the transcript for `/match`, `/pitch`, `/optimize`
+- Optional **image** attachment for `/visual`-style flows
 
-### Visual Company Recognition
-- Upload any company logo — the AI identifies the company and returns your fit score
-- Two-pass LLM vision: coarse extraction then fine-grained candidate matching
-- Supports company aliases (PWC, GM, RTX, EY, AMD, TikTok, etc.)
-- Supports both **OpenAI** (`gpt-5.4-nano`) and **Anthropic** (`claude-3-5-haiku-20241022`) for vision — configured separately from the chat model
+### Visual company recognition
+- Logo upload → LLM vision → match to fair roster (with alias handling)
+- Visual model can be configured separately from the main chat model in `jac.toml` (OpenAI and/or Anthropic)
 
-### Resume Management
-- Upload PDF resumes with browser-side text extraction (pdfjs-dist)
-- AI parses and stores skills, experience bullets, projects, and education
-- Multiple resumes per user; AI always uses your latest upload
-- Preview, download, and delete resumes
+### Experiences & behavioral prep
+- **Experiences**: structured work/project entries (add, edit, import from a resume version)
+- **BQ prep**: STAR-style stories linked to experiences, AI-assisted story building and suggestions
 
-### User Profile & Preferences
-- Set sponsorship needs, work authorization, preferred locations, work modes, and role types
-- Preferences auto-applied to company filtering and fit scoring
-- Dashboard shows your setup progress and career fair readiness checklist
+### User profile & preferences
+- Sponsorship need, work authorization, preferred locations, work modes, role types
+- Used in matching and filtering logic
+- **Resume Lab** contact block and parsed contact feed into exports when filled
 
 ---
 
@@ -270,49 +290,73 @@ npm start
 
 Frontend runs at `http://localhost:3000` and opens in your browser automatically.
 
+**API base URL** — If the backend is not at `http://localhost:8000`, create `frontend/.env`:
+
+```bash
+REACT_APP_API_URL=http://localhost:8000
+```
+
+Restart `npm start` after changing env vars.
+
+---
+
+## Using the application (instructions)
+
+1. **Create an account** — Sign up from the landing page, then log in. If you already have an old session token, log in still works: `Login` and `Signup` requests do not attach a stale token to the walker payload.
+2. **Add a resume** — Open **Resume Lab** from the dashboard. Upload a file or paste text, set version name and tags, then open the version to review or edit. Use **Preview** / **PDF** / **DOCX** as needed.
+3. **Set preferences** — Open **Profile** and fill sponsorship, locations, work modes, and role types so company ranking and filters match your situation.
+4. **Explore employers** — Open **Companies**, use filters, open a company, save it, and generate or paste a **pitch** where offered.
+5. **Rank by fit** — From chat, run `/match` or use **Match me with companies**, or use ranking elsewhere in the UI that calls `RankCompanies`. Ensure your latest resume is the one you want (Resume Lab or legacy upload).
+6. **Chat** — Ask free-form questions or use `/pitch`, `/optimize`, `/visual` with an image when configured.
+7. **Experiences & BQ** — Use **Experiences** to maintain entries and **BQ** (behavioral prep) for STAR stories and AI suggestions.
+
 ---
 
 ## Project Structure
 
 ```
 AI4Careers/
-├── main.jac                    # Entry point — imports all walkers
+├── main.jac                    # Entry — imports walkers from all modules
 ├── auth.jac                    # Signup, Login, Me, UpdatePreferences
 ├── resume.jac                  # ResumeUpload, GetResume, ListResumes, DeleteResume
+├── resume_telling.jac          # Resume Lab: RTUploadResume, RTListResumes, RTGetResume,
+│                               # RTDeleteResume, RTUpdate*, RTTailorResume, RTExportResume,
+│                               # experiences, stories, BQ helpers, etc.
 ├── career_fair.jac             # ListEvents, ListCompanies, GetCompany, ListRoles,
 │                               # SaveCompany, UnsaveCompany, ListSavedCompanies,
 │                               # SavePitch, RankCompanies
 ├── ai_chat.jac                 # ChatWithAI, GenerateElevatorPitch
-├── matching.jac                # Fit scoring algorithm (no API calls)
-├── parsing.jac                 # Resume parsing via LLM
-├── visual_match.jac            # Company logo identification (OpenAI or Anthropic vision)
-├── db.jac                      # All SQLite operations and schema
-├── security.jac                # Password hashing, token generation/validation
-├── import_career_fair.jac      # One-time CSV → DB importer (Jac version)
-├── jac.toml                    # Your local LLM config (gitignored)
-├── jac.toml.example            # Shared template — copy to jac.toml
+├── matching.jac                # Fit scoring (local), as_list helpers for JSON shapes
+├── parsing.jac                 # Resume parsing helpers
+├── visual_match.jac            # Company logo / visual match
+├── db.jac                      # SQLite schema + queries (resumes + resume_versions, etc.)
+├── security.jac                # Password hashing, tokens
+├── import_career_fair.jac      # CSV importer (Jac); prefer Python script below if I/O errors
+├── jac.toml                    # Local LLM config (gitignored)
+├── jac.toml.example            # Copy to jac.toml
 ├── .env                        # API keys (gitignored)
 ├── data/
-│   └── umich_fall_2025_company.csv   # Source data: 223 companies, 25 columns
+│   └── umich_fall_2025_company.csv
 └── frontend/
     ├── public/
-    │   └── pdf.worker.min.mjs        # pdfjs web worker (must match pdfjs-dist version)
+    │   └── pdf.worker.min.mjs
     └── src/
         ├── pages/
-        │   ├── Landing.js            # Public landing page
-        │   ├── Login.js              # Login
-        │   ├── Signup.js             # Sign up
-        │   ├── Dashboard.js          # Main hub with setup progress checklist
-        │   ├── Profile.js            # Resume management + preferences editor
-        │   ├── ResumeUpload.js       # PDF upload
-        │   ├── Companies.js          # Company browser with fit scores and filters
-        │   └── ChatWithAI.js         # AI chat interface with quick-action buttons
-        ├── context/
-        │   └── AuthContext.js        # Global auth state (token, user)
+        │   ├── Landing.js, Login.js, Signup.js
+        │   ├── Dashboard.js
+        │   ├── ResumeLab.js        # Resume Lab list + version editor (large UI module)
+        │   ├── Profile.js
+        │   ├── Companies.js
+        │   ├── ChatWithAI.js
+        │   ├── Experiences.js
+        │   └── BQPrep.js
         ├── components/
-        │   └── PrivateRoute.js       # Route guard for authenticated pages
+        │   ├── Layout.js, PrivateRoute.js
+        │   └── ...
+        ├── context/
+        │   └── AuthContext.js
         └── services/
-            └── api.js                # All API call wrappers (axios)
+            └── api.js                # walkerPost, auth, career fair, RT*, experiences, stories
 ```
 
 ---
@@ -324,7 +368,10 @@ SQLite at `.jac/data/ai4careers.db`, auto-initialized when the backend starts.
 | Table | Key columns |
 |-------|-------------|
 | `users` | `user_id`, `email` (unique), `password_hash`, `name`, `needs_sponsorship`, `work_authorization[]`, `preferred_locations[]`, `work_modes[]`, `role_types[]` |
-| `resumes` | `resume_id`, `user_id`, `filename`, `raw_text`, `pdf_data` (base64), `skills[]`, `experience_bullets[]`, `projects[]`, `education{}` |
+| `resumes` | Legacy uploads: `resume_id`, `user_id`, `filename`, `raw_text`, `pdf_data`, parsed JSON columns for skills, bullets, projects, education |
+| `resume_versions` | Resume Lab: `rv_id`, `user_id`, `version_name`, `label`, `company_tag`, `file_name`, `raw_text`, `parsed_data`, `section_order`, timestamps |
+| `experiences` | Structured experience entries for STAR / BQ flows |
+| `stories` | Behavioral stories linked to experiences |
 | `events` | `event_id`, `name`, `term`, `start_date`, `end_date` |
 | `companies` | `company_id`, `event_id`, `name`, `fair_day`, `is_multi_day`, `positions[]`, `majors[]`, `sponsorship[]`, `sponsorship_flag`, `sponsorship_status`, `regions[]`, `website`, `careers_url`, `accepts_hardcopy` |
 | `roles` | `role_id`, `event_id`, `company_id`, `title`, `category`, `location`, `sponsorship`, `tags[]`, `role_source_url`, `role_last_checked` |
@@ -372,6 +419,25 @@ All endpoints are `POST /walker/<WalkerName>` at `http://localhost:8000`.
 |--------|----------|----------|---------|
 | `ChatWithAI` | `token`, `question`, `history[]` | `event_id`, `image_data` (base64), `image_mime_type` | `{ answer }` |
 | `GenerateElevatorPitch` | `token`, `company_id`, `event_id` | — | `{ pitch }` |
+
+### Resume Lab & career prep (`resume_telling.jac`)
+All of these expect `token` in the POST body (injected by the frontend for authenticated walkers). Highlights:
+
+| Walker | Purpose |
+|--------|---------|
+| `RTUploadResume` | Create version from file (`file_data` base64) or `plain_text` |
+| `RTListResumes` / `RTGetResume` / `RTDeleteResume` | List, load, delete versions |
+| `RTUpdateResumeVersion` | `version_name`, `label`, `company_tag` (empty strings keep existing meta) |
+| `RTUpdateResumeParsed` | Save full parsed JSON |
+| `RTUpdateSectionOrder`, `RTMoveSectionItem` | Section order and bullet reorder |
+| `RTAdjustBullet` | AI shorten/lengthen/rewrite a bullet |
+| `RTTailorResume` / `RTSaveTailoredResume` | Tailor to JD; save as new version |
+| `RTMatchSkills`, `RTGenerateCoverLetter` | JD skill match; cover letter |
+| `RTExportResume` | DOCX bytes in response |
+| `RTAddExperience`, `RTListExperiences`, … | Experience CRUD + import from resume |
+| `RTBuildStory`, `RTListStories`, … | BQ / STAR story helpers |
+
+See `resume_telling.jac` and `frontend/src/services/api.js` for full parameter lists.
 
 ---
 
@@ -428,6 +494,15 @@ sqlite3 .jac/data/ai4careers.db "SELECT COUNT(*) FROM companies;"  # should be 2
 sqlite3 .jac/data/ai4careers.db "SELECT email, user_id FROM users;"
 # If empty: sign up first. If exists: clear browser localStorage and retry.
 ```
+
+**`Login.__init__() got an unexpected keyword argument 'token'`**  
+The frontend merges a stored session `token` into most walker bodies. **Login** and **Signup** are excluded so a stale token is not sent. Use a current `frontend/src/services/api.js` and hard-refresh the app.
+
+**`RankCompanies` / fit scoring: `string indices must be integers, not 'str'`**  
+Usually bad shapes in resume JSON (e.g. skills or bullets as strings vs lists). Fixed in `db.jac` (`get_latest_resume`) and `matching.jac` (`as_list`). Restart the backend after pulling changes.
+
+**Jac: `'pass' is not supported`**  
+Use a no-op in `except` blocks (e.g. assign to a dummy variable), not Python `pass`.
 
 **Resume upload fails**
 - Ensure `frontend/public/pdf.worker.min.mjs` matches `pdfjs-dist` version `5.5.207`

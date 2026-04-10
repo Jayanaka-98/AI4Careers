@@ -1,4 +1,4 @@
-# utils/security.jac
+# security.jac
 import from datetime { datetime }
 import from uuid { uuid4 }
 
@@ -27,10 +27,18 @@ def issue_token(user_id: str) -> str {
     return "token:" + user_id;
 }
 
-"""Extract user_id from token."""
+"""Extract user_id from token string."""
 def token_to_user_id(token: str) -> str {
     if token.startswith("token:") {
         return token.split(":")[1];
+    }
+    return "";
+}
+
+"""Extract user_id from a walker that may receive token in body or via Authorization header."""
+def resolve_user_id(body_token: str) -> str {
+    if body_token and body_token != "" {
+        return token_to_user_id(body_token);
     }
     return "";
 }

@@ -4,6 +4,8 @@ import from security { token_to_user_id }
 import from matching { rank_companies_for_user }
 
 walker:pub ListEvents {
+    has token: str = "";
+
     can list_events with Root entry {
         events = get_all_events();
         report events;
@@ -17,6 +19,7 @@ walker:pub ListCompanies {
     has sponsors: str = "";
     has region: str = "";
     has major_search: str = "";
+    has token: str = "";
 
     can list_companies with Root entry {
         filters = {
@@ -35,6 +38,7 @@ walker:pub ListCompanies {
 walker:pub GetCompany {
     has event_id: str;
     has company_id: str;
+    has token: str = "";
 
     can fetch with Root entry {
         company = get_company(self.event_id, self.company_id);
@@ -52,6 +56,7 @@ walker:pub ListRoles {
     has event_id: str;
     has location: str = "";
     has work_mode: str = "";
+    has token: str = "";
 
     can list_roles with Root entry {
         roles = get_roles(self.event_id);

@@ -493,6 +493,35 @@ def dict_cast(value: dict) -> dict {
     return value;
 }
 
+"""Normalize DB / JSON values that should be lists (avoids str treated like dict keys)."""
+def as_list(val) -> list {
+    if val is None {
+        return [];
+    }
+    import json;
+    if isinstance(val, list) {
+        return val;
+    }
+    if isinstance(val, str) {
+        s = val.strip();
+        if s == "" {
+            return [];
+        }
+        if s.startswith("[") {
+            try {
+                parsed = json.loads(s);
+                if isinstance(parsed, list) {
+                    return parsed;
+                }
+            } except Exception as _e {
+                _ignore = str(_e);
+            }
+        }
+        return [s];
+    }
+    return [str(val)];
+}
+
 
 def build_why_fit(
     matched_skills: list,
@@ -516,7 +545,7 @@ def build_why_fit(
     role_type_fit_value: float = float(scores["role_type_fit"]);
     company_positions: list = [];
     if "positions" in company {
-        for item in company["positions"] {
+        for item in as_list(company["positions"]) {
             company_positions.append(item);
         }
     }
@@ -542,7 +571,7 @@ def build_why_fit(
     location_fit_value: float = float(scores["location_fit"]);
     company_regions: list = [];
     if "regions" in company {
-        for item in company["regions"] {
+        for item in as_list(company["regions"]) {
             company_regions.append(item);
         }
     }
@@ -565,7 +594,7 @@ def build_action_plan(
     actions: list[str] = [];
     company_positions: list = [];
     if "positions" in company {
-        for item in company["positions"] {
+        for item in as_list(company["positions"]) {
             company_positions.append(item);
         }
     }
@@ -598,16 +627,35 @@ def build_action_plan(
 }
 
 def score_company(resume: dict, user: dict, company: dict) -> dict {
+    if not isinstance(resume, dict) or not isinstance(user, dict) or not isinstance(company, dict) {
+        return {
+            "company_id": str(company.get("company_id", "")) if isinstance(company, dict) else "",
+            "name": str(company.get("name", "")) if isinstance(company, dict) else "",
+            "score": 0.0,
+            "score_breakdown": {},
+            "positions": [],
+            "regions": [],
+            "degree_levels": [],
+            "majors": [],
+            "sponsorship_label": "Check Details",
+            "matched_skills": [],
+            "matched_domains": [],
+            "why_fit": [],
+            "action_plan": [],
+            "details": {}
+        };
+    }
+
     resume_skills: list = [];
     if "skills" in resume {
-        for item in resume["skills"] {
+        for item in as_list(resume["skills"]) {
             resume_skills.append(item);
         }
     }
     raw_text: str = str(resume["raw_text"]) if "raw_text" in resume else "";
     bullets: list = [];
     if "experience_bullets" in resume {
-        for item in resume["experience_bullets"] {
+        for item in as_list(resume["experience_bullets"]) {
             bullets.append(item);
         }
     }
@@ -617,32 +665,32 @@ def score_company(resume: dict, user: dict, company: dict) -> dict {
         else "";
     company_positions: list = [];
     if "positions" in company {
-        for item in company["positions"] {
+        for item in as_list(company["positions"]) {
             company_positions.append(item);
         }
     }
     company_majors: list = [];
     if "majors" in company {
-        for item in company["majors"] {
+        for item in as_list(company["majors"]) {
             company_majors.append(item);
         }
     }
     company_degree_levels: list = [];
     if "degree_levels" in company {
-        for item in company["degree_levels"] {
+        for item in as_list(company["degree_levels"]) {
             company_degree_levels.append(item);
         }
     }
 
     company_regions: list = [];
     if "regions" in company {
-        for item in company["regions"] {
+        for item in as_list(company["regions"]) {
             company_regions.append(item);
         }
     }
     company_sponsorship: list = [];
     if "sponsorship" in company {
-        for item in company["sponsorship"] {
+        for item in as_list(company["sponsorship"]) {
             company_sponsorship.append(item);
         }
     }
@@ -677,7 +725,7 @@ def score_company(resume: dict, user: dict, company: dict) -> dict {
 
     user_role_types: list = [];
     if "role_types" in user {
-        for item in user["role_types"] {
+        for item in as_list(user["role_types"]) {
             user_role_types.append(item);
         }
     }
@@ -694,7 +742,7 @@ def score_company(resume: dict, user: dict, company: dict) -> dict {
 
     preferred_locations: list = [];
     if "preferred_locations" in user {
-        for item in user["preferred_locations"] {
+        for item in as_list(user["preferred_locations"]) {
             preferred_locations.append(item);
         }
     }
@@ -796,6 +844,9 @@ def rank_companies_for_user(user_id: str, event_id: str) -> dict {
     ranked: list = [];
 
     for raw_company in companies {
+        if not isinstance(raw_company, dict) {
+            continue;
+        }
         company: dict = {};
         for k in raw_company {
             company[k] = raw_company[k];
@@ -824,6 +875,9 @@ def find_company_match_for_user(
     companies = get_companies_full(event_id);
 
     for raw_company in companies {
+        if not isinstance(raw_company, dict) {
+            continue;
+        }
         company: dict = {};
         for k in raw_company {
             company[k] = raw_company[k];

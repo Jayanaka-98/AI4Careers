@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth } from '../context/AuthContext';
 import { chatWithAI } from '../services/api';
+import Layout from '../components/Layout';
 
 function normalizeAssistantMarkdown(text) {
     if (typeof text !== 'string') return String(text ?? '');
@@ -25,8 +25,7 @@ function normalizeAssistantMarkdown(text) {
 }
 
 function ChatWithAI() {
-    const navigate = useNavigate();
-    const { token, user } = useAuth();
+    const { token } = useAuth();
 
     const [messages, setMessages] = useState([
         {
@@ -156,33 +155,58 @@ function ChatWithAI() {
 
 
     return (
-        <div className="chat-page">
-            <nav className="navbar">
-                <div className="nav-brand" onClick={() => navigate("/")}>
-                    <h2>AI4Careers</h2>
-                </div>
-                <div className="nav-links">
-                    <span className="user-name">{user ? `Hello, ${user.name}` : 'AI Chat'}</span>
-                    <button className="btn-secondary" onClick={() => navigate('/dashboard')}>
-                        Back to Dashboard
-                    </button>
-                </div>
-            </nav>
-
-            <div className="chat-shell">
-                <div className="chat-header-card">
-                    <h1>Chat With AI</h1>
-                    <p>
+        <Layout>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 24 }}>
+                <div
+                    style={{
+                        background: '#fff',
+                        border: '1px solid #d4caba',
+                        borderRadius: 16,
+                        padding: '20px 24px',
+                        marginBottom: 16,
+                    }}
+                >
+                    <h1 style={{ color: '#1a1a18' }}>Chat With AI</h1>
+                    <p style={{ color: '#7a7268' }}>
                         Ask about company fit, resume alignment, sponsorship constraints, locations,
                         or how to prioritize the career fair.
                     </p>
                 </div>
 
-                <div className="chat-window">
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        background: '#fff',
+                        borderRadius: 16,
+                        border: '1px solid #d4caba',
+                        padding: 20,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        marginBottom: 20,
+                    }}
+                >
                     {messages.map((msg, idx) => (
                         <div
                             key={idx}
-                            className={`chat-bubble ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}
+                            style={
+                                msg.role === 'user'
+                                    ? {
+                                          background: '#1a1a18',
+                                          color: '#f5f0e8',
+                                          borderRadius: 14,
+                                          padding: '12px 16px',
+                                          alignSelf: 'flex-end',
+                                      }
+                                    : {
+                                          background: '#ede8dc',
+                                          color: '#1a1a18',
+                                          borderRadius: 14,
+                                          padding: '12px 16px',
+                                          alignSelf: 'flex-start',
+                                      }
+                            }
                         >
                             <div className="chat-role">{msg.role === 'user' ? 'You' : 'AI'}</div>
                             <div className="chat-content">
@@ -200,17 +224,39 @@ function ChatWithAI() {
                     ))}
 
                     {loading && (
-                        <div className="chat-bubble chat-bubble-assistant">
+                        <div
+                            style={{
+                                background: '#ede8dc',
+                                color: '#1a1a18',
+                                borderRadius: 14,
+                                padding: '12px 16px',
+                                alignSelf: 'flex-start',
+                            }}
+                        >
                             <div className="chat-role">AI</div>
                             <div className="chat-content">Thinking...</div>
                         </div>
                     )}
                 </div>
 
-                {error && <div className="error-message">{error}</div>}
+                {error && (
+                    <div
+                        style={{
+                            background: '#fef2f2',
+                            color: '#b91c1c',
+                            border: '1px solid #fecaca',
+                            borderRadius: 10,
+                            padding: '10px 14px',
+                            fontSize: 13,
+                            marginBottom: 12,
+                        }}
+                    >
+                        {error}
+                    </div>
+                )}
 
                 {(
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: 12 }}>
                         {[
                             { label: '🎯 Match me with companies', command: '/match' },
                             { label: '🗣️ Generate elevator pitch', command: '/pitch' },
@@ -222,17 +268,21 @@ function ChatWithAI() {
                                 onClick={() => setInput(command)}
                                 style={{
                                     padding: '10px 16px',
-                                    borderRadius: '20px',
-                                    border: '1px solid #cbd5e0',
-                                    background: '#f7fafc',
-                                    color: '#2d3748',
+                                    borderRadius: 10,
+                                    border: '1px solid #d4caba',
+                                    background: '#fff',
+                                    color: '#1a1a18',
                                     fontSize: '0.88rem',
                                     cursor: 'pointer',
                                     transition: 'all 0.15s',
                                     whiteSpace: 'nowrap',
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.background = '#edf2f7'; e.currentTarget.style.borderColor = '#a0aec0'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#f7fafc'; e.currentTarget.style.borderColor = '#cbd5e0'; }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#fff';
+                                }}
                             >
                                 {label}
                             </button>
@@ -240,7 +290,7 @@ function ChatWithAI() {
                     </div>
                 )}
 
-                <form className="chat-input-bar" onSubmit={handleSubmit}>
+                <form style={{ marginTop: 12 }} onSubmit={handleSubmit}>
                     {selectedImagePreview && (
                         <div style={{ marginBottom: '10px' }}>
                             <img
@@ -261,9 +311,15 @@ function ChatWithAI() {
                                 </span>
                                 <button
                                     type="button"
-                                    className="btn-secondary"
                                     onClick={clearSelectedImage}
-                                    style={{ width: 'auto', padding: '6px 12px' }}
+                                    style={{
+                                        width: 'auto',
+                                        padding: '6px 12px',
+                                        border: '1px solid #d4caba',
+                                        background: 'transparent',
+                                        color: '#1a1a18',
+                                        borderRadius: 10,
+                                    }}
                                 >
                                     Remove Image
                                 </button>
@@ -277,6 +333,17 @@ function ChatWithAI() {
                         onKeyDown={handleKeyDown}
                         placeholder="Try /match, /match Google, /visual, /optimize, /pitch, or upload a logo image..."
                         rows={3}
+                        style={{
+                            border: '1px solid #d4caba',
+                            borderRadius: 12,
+                            padding: 12,
+                            fontSize: 14,
+                            outline: 'none',
+                            resize: 'vertical',
+                            background: '#fff',
+                            width: '100%',
+                            boxSizing: 'border-box',
+                        }}
                     />
 
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -290,21 +357,38 @@ function ChatWithAI() {
 
                         <button
                             type="button"
-                            className="btn-secondary"
                             onClick={() => fileInputRef.current?.click()}
-                            style={{ width: 'auto' }}
+                            style={{
+                                width: 'auto',
+                                border: '1px solid #d4caba',
+                                background: 'transparent',
+                                color: '#1a1a18',
+                                borderRadius: 10,
+                                padding: '10px 20px',
+                            }}
                         >
                             Upload Image
                         </button>
 
-                        <button type="submit" className="btn-primary" disabled={loading}>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                background: '#1a1a18',
+                                color: '#f5f0e8',
+                                borderRadius: 10,
+                                padding: '10px 20px',
+                                border: 'none',
+                                fontWeight: 600,
+                            }}
+                        >
                             {loading ? 'Sending...' : 'Send'}
                         </button>
                     </div>
                 </form>
 
             </div>
-        </div>
+        </Layout>
     );
 }
 

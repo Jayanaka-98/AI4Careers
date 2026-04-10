@@ -84,14 +84,14 @@ function Landing() {
             Match with top companies, optimize your resume, and ace your pitch — all before you walk in the door.
           </p>
           <div className="landing-hero-ctas">
-            <button className="landing-btn-solid landing-btn-lg landing-btn-hero" onClick={() => navigate('/signup')}>
+            <button className="landing-btn-solid landing-btn-lg landing-btn-hero" style={{ background: '#f5f0e8', color: '#1a1a18' }} onClick={() => navigate('/signup')}>
               Get Started Free
             </button>
             <a className="landing-btn-ghost landing-btn-lg" href="#how-it-works">
               See How It Works ↓
             </a>
           </div>
-          <p className="landing-hero-hint">No credit card required · Free for students</p>
+          <p className="landing-hero-hint">Free for Students</p>
         </div>
         <div className="landing-hero-glow" />
       </section>
@@ -142,7 +142,7 @@ function Landing() {
       <FadeSection className="landing-cta-banner">
         <h2 className="landing-cta-title">Ready for the career fair?</h2>
         <p className="landing-cta-sub">Join students who prep smarter with AI4Careers.</p>
-        <button className="landing-btn-solid landing-btn-lg landing-btn-hero" onClick={() => navigate('/signup')}>
+        <button className="landing-btn-solid landing-btn-lg landing-btn-hero" style={{ background: '#f5f0e8', color: '#1a1a18' }} onClick={() => navigate('/signup')}>
           Create Your Free Account →
         </button>
       </FadeSection>

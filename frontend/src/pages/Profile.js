@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { listResumes, deleteResume, getResume, updatePreferences } from '../services/api';
+import { rtListResumes, rtDeleteResume, updatePreferences } from '../services/api';
+import Layout from '../components/Layout';
 
 function PillGroup({ label, options, selected, onChange, hint }) {
   const toggle = (opt) => {
     onChange(selected.includes(opt) ? selected.filter(o => o !== opt) : [...selected, opt]);
   };
   return (
-    <div className="form-group">
-      <label style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>{label}</label>
-      {hint && <p style={{ color: '#888', fontSize: '0.82rem', marginBottom: '8px', marginTop: 0 }}>{hint}</p>}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+    <div style={{ marginBottom: 20 }}>
+      <label style={{ fontWeight: 600, display: 'block', marginBottom: 4, fontSize: 13, color: '#1a1a18' }}>{label}</label>
+      {hint && <p style={{ color: '#9a9288', fontSize: 12, marginBottom: 8, marginTop: 0 }}>{hint}</p>}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {options.map(opt => {
           const active = selected.includes(opt);
           return (
@@ -21,12 +23,12 @@ function PillGroup({ label, options, selected, onChange, hint }) {
               onClick={() => toggle(opt)}
               style={{
                 padding: '6px 14px',
-                borderRadius: '999px',
-                border: active ? '2px solid #3182ce' : '2px solid #cbd5e0',
-                background: active ? '#3182ce' : '#fff',
-                color: active ? '#fff' : '#4a5568',
+                borderRadius: 999,
+                border: active ? '2px solid #1a1a18' : '1px solid #d4caba',
+                background: active ? '#1a1a18' : '#fff',
+                color: active ? '#f5f0e8' : '#7a7268',
                 fontWeight: active ? 600 : 400,
-                fontSize: '0.85rem',
+                fontSize: 13,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
@@ -71,7 +73,7 @@ const ROLE_TYPE_OPTIONS = ['Internship', 'Full-Time'];
 
 function Profile() {
   const navigate = useNavigate();
-  const { user, token, logout, refreshUser } = useAuth();
+  const { user, token, refreshUser } = useAuth();
 
   const [resumes, setResumes] = useState([]);
   const [resumeLoading, setResumeLoading] = useState(true);
@@ -92,14 +94,15 @@ function Profile() {
     setResumeLoading(true);
     setResumeError('');
     try {
-      const result = await listResumes(token);
-      setResumes(result.resumes || []);
+      const result = await rtListResumes();
+      const list = result?.resumes ?? (Array.isArray(result) ? result : []);
+      setResumes(list);
     } catch {
       setResumeError('Failed to load resumes.');
     } finally {
       setResumeLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => { fetchResumes(); }, [fetchResumes]);
 
@@ -116,44 +119,14 @@ function Profile() {
     }
   }, [user]);
 
-  const getPdfBlobUrl = async (resume) => {
-    const result = await getResume(token, resume.resume_id);
-    if (result.error || !result.pdf_data) {
-      alert('PDF not available for this resume.');
-      return null;
-    }
-    const bytes = atob(result.pdf_data);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    return URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
-  };
-
-  const handlePreview = async (resume) => {
+  const handleDelete = async (rv_id) => {
+    if (!window.confirm('Delete this resume version?')) return;
     try {
-      const url = await getPdfBlobUrl(resume);
-      if (url) window.open(url, '_blank');
-    } catch { alert('Failed to preview resume.'); }
-  };
-
-  const handleDownload = async (resume) => {
-    try {
-      const url = await getPdfBlobUrl(resume);
-      if (!url) return;
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = resume.filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch { alert('Failed to download resume.'); }
-  };
-
-  const handleDelete = async (resume_id) => {
-    if (!window.confirm('Delete this resume?')) return;
-    const result = await deleteResume(token, resume_id);
-    if (result.error) setResumeError('Failed to delete resume.');
-    else {
-      setResumes((prev) => prev.filter((r) => r.resume_id !== resume_id));
+      await rtDeleteResume(rv_id);
+      setResumes((prev) => prev.filter((r) => (r.rv_id || r.resume_id) !== rv_id));
       await refreshUser();
+    } catch {
+      setResumeError('Failed to delete resume.');
     }
   };
 
@@ -181,76 +154,94 @@ function Profile() {
   };
 
   return (
-    <div className="dashboard-container">
-      <nav className="navbar">
-        <div className="nav-brand" onClick={() => navigate("/")}><h2>AI4Careers</h2></div>
-        <div className="nav-links">
-          <span className="user-name">Hello, {user?.name}</span>
-          <button className="btn-secondary" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
-          <button className="btn-secondary" onClick={() => { logout(); navigate('/login'); }}>Logout</button>
-        </div>
-      </nav>
+    <Layout>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 32 }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <h2 style={{ marginBottom: 24, color: '#1a1a18', fontSize: 22, fontWeight: 700 }}>My Profile & Preferences</h2>
 
-      <div className="dashboard-content">
-        <h2 style={{ marginBottom: '24px', color: '#333', fontSize: '24px' }}>My Profile & Preferences</h2>
-
-        {/* Resumes */}
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>My Resumes</h3>
-            <button className="btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/resume-upload')}>+ Upload New</button>
+        {/* Resumes — powered by Resume Lab */}
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #d4caba', padding: 24, marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1a1a18', margin: 0 }}>My Resumes</h3>
+            <button
+              onClick={() => navigate('/resume-lab')}
+              style={{
+                padding: '8px 18px', borderRadius: 10, border: 'none',
+                background: '#1a1a18', color: '#f5f0e8', fontSize: 13,
+                fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >+ Upload New</button>
           </div>
 
-          {resumeError && <div className="error-message">{resumeError}</div>}
+          {resumeError && <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 12 }}>{resumeError}</div>}
 
-          {resumeLoading ? <p>Loading resumes...</p> : resumes.length === 0 ? (
-            <p style={{ color: '#888' }}>No resumes uploaded yet.</p>
+          {resumeLoading ? <p style={{ color: '#9a9288', fontSize: 14 }}>Loading resumes...</p> : resumes.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <FileText size={32} style={{ color: '#d4caba', marginBottom: 8 }} />
+              <p style={{ color: '#9a9288', fontSize: 14, margin: '0 0 12px' }}>No resumes yet.</p>
+              <Link to="/resume-lab" style={{ color: '#1a1a18', fontWeight: 600, fontSize: 13, textDecoration: 'underline' }}>
+                Go to Resume Lab to upload
+              </Link>
+            </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
-                  <th style={{ padding: '8px' }}>Filename</th>
-                  <th style={{ padding: '8px' }}>Uploaded</th>
-                  <th style={{ padding: '8px' }}>Skills Found</th>
-                  <th style={{ padding: '8px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resumes.map((r) => (
-                  <tr key={r.resume_id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '8px' }}>{r.filename}</td>
-                    <td style={{ padding: '8px' }}>{new Date(r.uploaded_at).toLocaleDateString()}</td>
-                    <td style={{ padding: '8px' }}>{r.skills_count}</td>
-                    <td style={{ padding: '8px', display: 'flex', gap: '8px' }}>
-                      <button className="btn-secondary" onClick={() => handlePreview(r)}>Preview</button>
-                      <button className="btn-secondary" onClick={() => handleDownload(r)}>Download</button>
-                      <button className="btn-secondary" style={{ color: '#e53e3e', borderColor: '#e53e3e' }} onClick={() => handleDelete(r.resume_id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {resumes.map((r) => {
+                const id = r.rv_id || r.resume_id;
+                const area = (r.label || 'general') === 'general' ? 'other' : r.label;
+                const co = r.company_tag != null && String(r.company_tag).trim() !== '' ? String(r.company_tag).trim() : 'Other';
+                const metaParts = [];
+                if ((r.label || 'general') !== 'general') metaParts.push(area);
+                if (co !== 'Other') metaParts.push(co);
+                const meta = metaParts.length ? `${metaParts.join(' · ')} · ` : '';
+                return (
+                  <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, border: '1px solid #ede8dc', background: '#faf8f4' }}>
+                    <FileText size={18} style={{ color: '#9a9288', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1a1a18', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.version_name || r.file_name || 'Resume'}
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9a9288' }}>
+                        {meta}
+                        {new Date(r.updated_at || r.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/resume-lab/${id}`)}
+                      style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid #d4caba', background: 'transparent', color: '#1a1a18', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >Open</button>
+                    <button
+                      onClick={() => handleDelete(id)}
+                      style={{ padding: '5px 14px', borderRadius: 8, border: '1px solid #e8c4c4', background: 'transparent', color: '#b91c1c', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >Delete</button>
+                  </div>
+                );
+              })}
+              <Link to="/resume-lab" style={{ color: '#7a7268', fontSize: 13, textDecoration: 'underline', marginTop: 4 }}>
+                Manage all in Resume Lab →
+              </Link>
+            </div>
           )}
         </div>
 
         {/* Preferences */}
-        <div className="card">
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>Career Preferences</h3>
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #d4caba', padding: 24 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1a1a18', margin: '0 0 16px' }}>Career Preferences</h3>
 
-          {prefsError && <div className="error-message">{prefsError}</div>}
-          {prefsStatus && <div className="success-message">{prefsStatus}</div>}
+          {prefsError && <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 12 }}>{prefsError}</div>}
+          {prefsStatus && <div style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 12 }}>{prefsStatus}</div>}
 
           <form onSubmit={handlePrefsSubmit}>
 
             {/* Needs Sponsorship */}
-            <div className="form-group">
-              <label style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontWeight: 600, display: 'block', marginBottom: 8, fontSize: 13, color: '#1a1a18' }}>
                 Do you need visa sponsorship?
               </label>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: 10 }}>
                 {['Yes', 'No'].map((opt) => {
                   const active = prefs.needs_sponsorship === (opt === 'Yes');
-                  const color = opt === 'Yes' ? '#e53e3e' : '#38a169';
                   return (
                     <button
                       key={opt}
@@ -258,12 +249,12 @@ function Profile() {
                       onClick={() => setPrefs({ ...prefs, needs_sponsorship: opt === 'Yes' })}
                       style={{
                         padding: '8px 28px',
-                        borderRadius: '999px',
-                        border: `2px solid ${color}`,
-                        background: active ? color : '#fff',
-                        color: active ? '#fff' : color,
+                        borderRadius: 999,
+                        border: active ? '2px solid #1a1a18' : '1px solid #d4caba',
+                        background: active ? '#1a1a18' : '#fff',
+                        color: active ? '#f5f0e8' : '#7a7268',
                         fontWeight: 600,
-                        fontSize: '0.9rem',
+                        fontSize: 13,
                         cursor: 'pointer',
                         transition: 'all 0.15s',
                       }}
@@ -303,13 +294,25 @@ function Profile() {
               onChange={(val) => setPrefs({ ...prefs, role_types: val })}
             />
 
-            <button type="submit" className="btn-primary" disabled={prefsSaving} style={{ marginTop: '1rem' }}>
+            <button
+              type="submit"
+              disabled={prefsSaving}
+              style={{
+                marginTop: 16, padding: '12px 28px', borderRadius: 10,
+                border: 'none', background: '#1a1a18', color: '#f5f0e8',
+                fontSize: 14, fontWeight: 600, cursor: prefsSaving ? 'not-allowed' : 'pointer',
+                opacity: prefsSaving ? 0.6 : 1, transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => { if (!prefsSaving) e.currentTarget.style.opacity = '0.85'; }}
+              onMouseLeave={e => { if (!prefsSaving) e.currentTarget.style.opacity = '1'; }}
+            >
               {prefsSaving ? 'Saving...' : 'Save Preferences'}
             </button>
           </form>
         </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
 
