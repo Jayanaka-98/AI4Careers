@@ -23,7 +23,7 @@ frontend/.env.local
 .DS_Store
 
 # Local config (each dev uses their own model/key)
-jac.toml
+# jac.toml
 
 # Backup files
 *.bak
