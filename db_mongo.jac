@@ -131,7 +131,9 @@ def delete_resume(resume_id: str, user_id: str) -> bool {
 }
 
 def get_all_events() -> list {
-    return list(_db().find('events', {}));
+    rows: list[dict] = list(_db().find('events', {}));
+    return [{'event_id': r['event_id'], 'name': r['name'], 'term': r['term'],
+             'start_date': r['start_date'], 'end_date': r['end_date']} for r in rows];
 }
 
 def get_companies(event_id: str, filters: dict) -> list {
