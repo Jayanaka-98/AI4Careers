@@ -1,10 +1,9 @@
 import csv;
 import json;
 import os;
-import sqlite3;
 import from uuid { uuid4 }
 
-import from db { DB_PATH, init_db }
+import from jac_scale.lib { kvstore, Db }
 
 glob CAREER_FAIR_CSV: str = os.path.join(
          "data", "umich_fall_2025_company.csv"
@@ -16,14 +15,11 @@ glob EVENT_TERM: str = "Fall 2025";
 glob EVENT_START: str = "2025-09-22";
 glob EVENT_END: str = "2025-09-23";
 
-def _conn() -> sqlite3.Connection {
-    conn = sqlite3.connect(DB_PATH);
-    conn.row_factory = sqlite3.Row;
-    conn.execute("PRAGMA foreign_keys=ON");
-    return conn;
+def _db() -> Db {
+    return kvstore(db_name='ai4careers', db_type='mongodb');
 }
 
-def _safe_str(value) -> str {
+def _safe_str(value: object) -> str {
     if value is None {
         return "";
     }
@@ -34,7 +30,7 @@ def _safe_str(value) -> str {
     return txt;
 }
 
-def _split_csv_like(value) -> list[str] {
+def _split_csv_like(value: object) -> list {
     text = _safe_str(value);
     if text == "" {
         return [];
@@ -50,7 +46,7 @@ def _split_csv_like(value) -> list[str] {
         parts = text.split(",");
     }
 
-    cleaned: list[str] = [];
+    cleaned: list = [];
     for part in parts {
         item = _safe_str(part);
         if item != "" and item not in cleaned {
@@ -60,7 +56,7 @@ def _split_csv_like(value) -> list[str] {
     return cleaned;
 }
 
-def _split_sponsorship(value) -> list[str] {
+def _split_sponsorship(value: object) -> list {
     text = _safe_str(value);
     if text == "" {
         return [];
@@ -76,7 +72,7 @@ def _split_sponsorship(value) -> list[str] {
         parts = [text];
     }
 
-    cleaned: list[str] = [];
+    cleaned: list = [];
     for part in parts {
         item = _safe_str(part);
         if item != "" and item not in cleaned {
@@ -87,12 +83,12 @@ def _split_sponsorship(value) -> list[str] {
 }
 
 
-def _to_bool(value) -> bool {
+def _to_bool(value: object) -> bool {
     text = _safe_str(value).lower();
     return text in ["true", "1", "yes", "y"];
 }
 
-def _normalize_url(value) -> str {
+def _normalize_url(value: object) -> str {
     text = _safe_str(value);
     if text == "" {
         return "";
@@ -105,18 +101,24 @@ def _normalize_url(value) -> str {
     return "https://" + text;
 }
 
-def _make_role_titles(row: dict) -> list[dict] {
+def _make_role_titles(row: dict) -> list {
     role_titles = _split_csv_like(row["role_titles"]);
     positions = _split_csv_like(row["positions_recruited"]);
     sponsorship_list = _split_sponsorship(row["work_authorization_sponsorship"]);
     regions = _split_csv_like(row["regions_recruited"]);
+    degree_levels = _split_csv_like(row["degree_levels_recruited"]);
 
     sponsorship_value = "Unknown";
     if len(sponsorship_list) > 0 {
         sponsorship_value = ", ".join(sponsorship_list);
     }
 
-    roles: list[dict] = [];
+    role_tags: list = list(positions);
+    for d in degree_levels {
+        role_tags.append(d);
+    }
+
+    roles: list = [];
 
     if len(role_titles) > 0 {
         for title in role_titles {
@@ -128,7 +130,7 @@ def _make_role_titles(row: dict) -> list[dict] {
                     "work_mode": "",
                     "sponsorship": sponsorship_value,
                     "description": _safe_str(row["description"]),
-                    "tags": positions + _split_csv_like(row["degree_levels_recruited"])
+                    "tags": role_tags
                 }
             );
         }
@@ -144,7 +146,7 @@ def _make_role_titles(row: dict) -> list[dict] {
                 "work_mode": "",
                 "sponsorship": sponsorship_value,
                 "description": _safe_str(row["description"]),
-                "tags": _split_csv_like(row["degree_levels_recruited"])
+                "tags": degree_levels
             }
         );
     }
@@ -153,20 +155,19 @@ def _make_role_titles(row: dict) -> list[dict] {
 }
 
 def import_career_fair(csv_path: str) -> dict {
-    init_db();
+    db = _db();
 
-    conn = _conn();
-    c = conn.cursor();
+    db.delete_many('roles', {'event_id': EVENT_ID});
+    db.delete_many('companies', {'event_id': EVENT_ID});
+    db.delete_one('events', {'event_id': EVENT_ID});
 
-    c.execute("DELETE FROM roles WHERE event_id = ?", (EVENT_ID, ));
-    c.execute("DELETE FROM companies WHERE event_id = ?", (EVENT_ID, ));
-    c.execute("DELETE FROM events WHERE event_id = ?", (EVENT_ID, ));
-
-    c.execute(
-        """INSERT INTO events (event_id, name, term, start_date, end_date)
-           VALUES (?, ?, ?, ?, ?)""",
-        (EVENT_ID, EVENT_NAME, EVENT_TERM, EVENT_START, EVENT_END)
-    );
+    db.insert_one('events', {
+        'event_id': EVENT_ID,
+        'name': EVENT_NAME,
+        'term': EVENT_TERM,
+        'start_date': EVENT_START,
+        'end_date': EVENT_END
+    });
 
     company_count: int = 0;
     role_count: int = 0;
@@ -189,111 +190,58 @@ def import_career_fair(csv_path: str) -> dict {
                 sponsorship_status = "No";
             }
 
-            c.execute(
-                """INSERT INTO companies (
-                    company_id,
-                    event_id,
-                    name,
-                    icon_url,
-                    fair_day,
-                    is_multi_day,
-                    website,
-                    careers_url,
-                    description,
-                    positions,
-                    degree_levels,
-                    academic_years,
-                    majors,
-                    sponsorship,
-                    sponsorship_notes,
-                    sponsorship_flag,
-                    sponsorship_status,
-                    regions,
-                    accepts_hardcopy
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(company_id) DO UPDATE SET
-                    event_id = excluded.event_id,
-                    name = excluded.name,
-                    fair_day = excluded.fair_day,
-                    is_multi_day = excluded.is_multi_day,
-                    website = excluded.website,
-                    careers_url = excluded.careers_url,
-                    description = excluded.description,
-                    positions = excluded.positions,
-                    degree_levels = excluded.degree_levels,
-                    academic_years = excluded.academic_years,
-                    majors = excluded.majors,
-                    sponsorship = excluded.sponsorship,
-                    sponsorship_notes = excluded.sponsorship_notes,
-                    sponsorship_flag = excluded.sponsorship_flag,
-                    sponsorship_status = excluded.sponsorship_status,
-                    regions = excluded.regions,
-                    accepts_hardcopy = excluded.accepts_hardcopy""",
-                (
-                    company_id,
-                    EVENT_ID,
-                    _safe_str(row["employer_name"]),
-                    "",
-                    _safe_str(row.get("fair_days", row.get("fair_day", ""))),
-                    1 if _to_bool(row["is_multi_day_company"]) else 0,
-                    _normalize_url(row["website"]),
-                    _normalize_url(row["company_careers_website"]),
-                    _safe_str(row["description"]),
-                    json.dumps(_split_csv_like(row["positions_recruited"])),
-                    json.dumps(_split_csv_like(row["degree_levels_recruited"])),
-                    json.dumps(_split_csv_like(row["academic_years_recruited"])),
-                    json.dumps(_split_csv_like(row["degrees_majors_recruited"])),
-                    json.dumps(_split_sponsorship(row["work_authorization_sponsorship"])),
-                    _safe_str(row["work_authorization_notes"]),
-                    sponsorship_flag,
-                    sponsorship_status,
-                    json.dumps(_split_csv_like(row["regions_recruited"])),
-                    1 if _to_bool(row["accept_hardcopy_resumes"]) else 0
-                )
-            );
+            company_doc = {
+                'company_id': company_id,
+                'event_id': EVENT_ID,
+                'name': _safe_str(row["employer_name"]),
+                'icon_url': "",
+                'fair_day': _safe_str(row.get("fair_days", row.get("fair_day", ""))),
+                'is_multi_day': 1 if _to_bool(row["is_multi_day_company"]) else 0,
+                'website': _normalize_url(row["website"]),
+                'careers_url': _normalize_url(row["company_careers_website"]),
+                'description': _safe_str(row["description"]),
+                'positions': _split_csv_like(row["positions_recruited"]),
+                'degree_levels': _split_csv_like(row["degree_levels_recruited"]),
+                'academic_years': _split_csv_like(row["academic_years_recruited"]),
+                'majors': _split_csv_like(row["degrees_majors_recruited"]),
+                'sponsorship': _split_sponsorship(row["work_authorization_sponsorship"]),
+                'sponsorship_notes': _safe_str(row["work_authorization_notes"]),
+                'sponsorship_flag': sponsorship_flag,
+                'sponsorship_status': sponsorship_status,
+                'regions': _split_csv_like(row["regions_recruited"]),
+                'accepts_hardcopy': 1 if _to_bool(row["accept_hardcopy_resumes"]) else 0
+            };
+
+            existing: dict | None = db.find_one('companies', {'company_id': company_id});
+            if existing is None {
+                db.insert_one('companies', company_doc);
+            } else {
+                db.update_one('companies', {'company_id': company_id}, {'$set': company_doc});
+            }
             company_count += 1;
 
             role_defs = _make_role_titles(row);
             for role in role_defs {
                 role_id = "role_" + str(uuid4())[:8];
 
-                c.execute(
-                    """INSERT INTO roles (
-                        role_id,
-                        event_id,
-                        company_id,
-                        title,
-                        category,
-                        location,
-                        work_mode,
-                        sponsorship,
-                        description,
-                        tags,
-                        role_source_url,
-                        role_last_checked
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        role_id,
-                        EVENT_ID,
-                        company_id,
-                        role["title"],
-                        role["category"],
-                        role["location"],
-                        role["work_mode"],
-                        role["sponsorship"],
-                        role["description"],
-                        json.dumps(role["tags"]),
-                        _safe_str(row.get("role_source_url", "")),
-                        _safe_str(row.get("role_last_checked", ""))
-                    )
-                );
+                db.insert_one('roles', {
+                    'role_id': role_id,
+                    'event_id': EVENT_ID,
+                    'company_id': company_id,
+                    'title': role["title"],
+                    'category': role["category"],
+                    'location': role["location"],
+                    'work_mode': role["work_mode"],
+                    'sponsorship': role["sponsorship"],
+                    'description': role["description"],
+                    'tags': role["tags"],
+                    'role_source_url': _safe_str(row.get("role_source_url", "")),
+                    'role_last_checked': _safe_str(row.get("role_last_checked", ""))
+                });
                 role_count += 1;
             }
         }
     }
-
-    conn.commit();
-    conn.close();
 
     return {
         "ok": True,
