@@ -410,3 +410,26 @@ def delete_story(story_id: str, user_id: str) -> bool {
     _db().delete_one('stories', {'story_id': story_id, 'user_id': user_id});
     return True;
 }
+
+def clear_event_import(event_id: str) {
+    _db().delete_many('roles', {'event_id': event_id});
+    _db().delete_many('companies', {'event_id': event_id});
+    _db().delete_one('events', {'event_id': event_id});
+}
+
+def insert_event(event_doc: dict) {
+    _db().insert_one('events', event_doc);
+}
+
+def upsert_company(company_doc: dict) {
+    existing: dict | None = _db().find_one('companies', {'company_id': company_doc['company_id']});
+    if existing is None {
+        _db().insert_one('companies', company_doc);
+    } else {
+        _db().update_one('companies', {'company_id': company_doc['company_id']}, {'$set': company_doc});
+    }
+}
+
+def insert_role(role_doc: dict) {
+    _db().insert_one('roles', role_doc);
+}
