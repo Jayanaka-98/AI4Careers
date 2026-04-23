@@ -384,3 +384,15 @@ def _do_init() -> bool {
 }
 
 glob _db_initialized: bool = _do_init();
+
+def _auto_seed() -> bool {
+    import os;
+    if len(get_all_events()) > 0 { return True; }
+    csv_path = os.path.join('data', 'umich_fall_2025_company.csv');
+    if not os.path.exists(csv_path) { return False; }
+    import from import_career_fair { import_career_fair as _imp };
+    _imp(csv_path);
+    return True;
+}
+
+glob _db_seeded: bool = _auto_seed();
